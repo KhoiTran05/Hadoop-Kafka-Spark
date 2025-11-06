@@ -1,0 +1,443 @@
+2025-10-08 22:04:18,369 - INFO - Fetching weather data ...
+2025-10-08 22:04:18,369 - INFO - API key to fetch weather data is empty
+2025-10-08 22:08:41,325 - INFO - Fetching weather data ...
+2025-10-08 22:10:26,399 - INFO - Fetching weather data ...
+2025-10-08 22:10:27,712 - INFO - Fetched weather data for New York,US
+2025-10-08 22:10:27,878 - INFO - Fetched weather data for Los Angeles,US
+2025-10-08 22:10:28,018 - INFO - Fetched weather data for Chicago,US
+2025-10-08 22:10:28,175 - INFO - Fetched weather data for Houston,US
+2025-10-08 22:10:28,319 - INFO - Fetched weather data for Phoenix,US
+2025-10-08 22:10:28,459 - INFO - Fetched weather data for Philadelphia,US
+2025-10-08 22:10:28,722 - INFO - Fetched weather data for San Antonio,US
+2025-10-08 22:10:28,903 - INFO - Fetched weather data for San Diego,US
+2025-10-08 22:10:29,053 - INFO - Fetched weather data for Ha Noi,VN
+2025-10-08 22:10:29,208 - INFO - Fetched weather data for Ho Chi Minh City, VN
+2025-10-08 22:10:29,221 - INFO - Saved 10 records to /data/raw/weather/weather_20251008_221029.json
+2025-10-08 22:18:58,861 - INFO - Fetching weather data ...
+2025-10-08 22:18:59,126 - INFO - Fetched weather data for New York,US
+2025-10-08 22:18:59,276 - INFO - Fetched weather data for Los Angeles,US
+2025-10-08 22:18:59,582 - INFO - Fetched weather data for Chicago,US
+2025-10-08 22:18:59,742 - INFO - Fetched weather data for Houston,US
+2025-10-08 22:18:59,888 - INFO - Fetched weather data for Phoenix,US
+2025-10-08 22:19:00,211 - INFO - Fetched weather data for Philadelphia,US
+2025-10-08 22:19:00,494 - INFO - Fetched weather data for San Antonio,US
+2025-10-08 22:19:00,761 - INFO - Fetched weather data for San Diego,US
+2025-10-08 22:19:00,908 - INFO - Fetched weather data for Ha Noi,VN
+2025-10-08 22:19:01,064 - INFO - Fetched weather data for Ho Chi Minh City, VN
+2025-10-08 22:19:01,069 - INFO - Saved 10 records to e:\DE Project\Hadoop Ecosystem\data\raw\weather_20251008_221901.json
+2025-10-09 10:24:41,945 - INFO - Fetching weather data ...
+2025-10-09 10:24:41,945 - INFO - Successfully retrieved API key for 'weather'.
+2025-10-09 10:24:42,447 - INFO - Fetched weather data for New York,US
+2025-10-09 10:24:43,358 - INFO - Fetched weather data for Los Angeles,US
+2025-10-09 10:24:43,657 - INFO - Fetched weather data for Chicago,US
+2025-10-09 10:24:43,984 - INFO - Fetched weather data for Houston,US
+2025-10-09 10:24:44,272 - INFO - Fetched weather data for Phoenix,US
+2025-10-09 10:24:44,576 - INFO - Fetched weather data for Philadelphia,US
+2025-10-09 10:24:44,882 - INFO - Fetched weather data for San Antonio,US
+2025-10-09 10:24:45,289 - INFO - Fetched weather data for San Diego,US
+2025-10-09 10:24:45,716 - INFO - Fetched weather data for Ha Noi,VN
+2025-10-09 10:24:46,221 - INFO - Fetched weather data for Ho Chi Minh City, VN
+2025-10-09 10:24:46,235 - INFO - Saved 10 weather records to e:\DE Project\Hadoop Ecosystem\data\raw\weather_20251009_102446.json
+2025-10-09 10:24:46,238 - INFO - Fetching stock data ...
+2025-10-09 10:24:46,238 - INFO - Successfully retrieved API key for 'stocks'.
+2025-10-09 10:24:47,153 - INFO - Fetched stock data for AAPL
+2025-10-09 10:24:47,746 - INFO - Fetched stock data for GOOGL
+2025-10-09 10:24:48,586 - INFO - Fetched stock data for MSFT
+2025-10-09 10:24:49,190 - INFO - Fetched stock data for AMZN
+2025-10-09 10:24:49,715 - INFO - Fetched stock data for TSLA
+2025-10-09 10:24:49,715 - INFO - Reach rate limited, watiting 56.52 seconds
+2025-10-09 10:25:46,838 - INFO - Fetched stock data for META
+2025-10-09 10:25:46,838 - INFO - Reach rate limited, watiting 0.32 seconds
+2025-10-09 10:25:47,761 - INFO - Fetched stock data for NFLX
+2025-10-09 10:25:48,163 - INFO - Fetched stock data for NVDA
+2025-10-09 10:28:02,382 - INFO - Fetching stock data ...
+2025-10-09 10:28:02,382 - INFO - Successfully retrieved API key for 'stocks'.
+2025-10-09 10:28:03,034 - INFO - Fetched stock data for AAPL
+2025-10-09 10:28:03,581 - INFO - Fetched stock data for GOOGL
+2025-10-09 10:28:04,072 - INFO - Fetched stock data for MSFT
+2025-10-09 10:28:04,473 - INFO - Fetched stock data for AMZN
+2025-10-09 10:28:05,107 - INFO - Fetched stock data for TSLA
+2025-10-09 10:28:05,107 - INFO - Reach rate limited, watiting 57.27 seconds
+2025-10-09 10:29:03,766 - INFO - Fetched stock data for META
+2025-10-09 10:29:04,790 - INFO - Fetched stock data for NFLX
+2025-10-09 10:29:05,298 - INFO - Fetched stock data for NVDA
+2025-10-09 10:33:03,431 - INFO - Fetching stock data ...
+2025-10-09 10:33:03,431 - INFO - Successfully retrieved API key for 'stocks'.
+2025-10-09 10:33:05,642 - INFO - Fetched stock data for AAPL
+2025-10-09 10:33:06,156 - INFO - Fetched stock data for GOOGL
+2025-10-09 10:33:07,169 - INFO - Fetched stock data for MSFT
+2025-10-09 10:33:07,723 - INFO - Fetched stock data for AMZN
+2025-10-09 10:33:08,305 - INFO - Fetched stock data for TSLA
+2025-10-09 10:33:08,305 - INFO - Reach rate limited, watiting 55.13 seconds
+2025-10-09 10:34:04,811 - INFO - Fetched stock data for META
+2025-10-09 10:34:04,811 - INFO - Reach rate limited, watiting 0.83 seconds
+2025-10-09 10:34:06,457 - INFO - Fetched stock data for NFLX
+2025-10-09 10:34:07,256 - INFO - Fetched stock data for NVDA
+2025-10-09 10:36:15,993 - INFO - Fetching stock data ...
+2025-10-09 10:36:15,994 - INFO - Successfully retrieved API key for 'stocks'.
+2025-10-09 10:36:16,615 - INFO - Fetched stock data for AAPL
+2025-10-09 10:36:17,715 - INFO - Fetched stock data for GOOGL
+2025-10-09 10:36:18,367 - INFO - Fetched stock data for MSFT
+2025-10-09 10:36:18,958 - INFO - Fetched stock data for AMZN
+2025-10-09 10:36:19,528 - INFO - Fetched stock data for TSLA
+2025-10-09 10:36:19,529 - INFO - Reach rate limited, watiting 56.46 seconds
+2025-10-09 10:37:16,919 - INFO - Fetched stock data for META
+2025-10-09 10:37:17,540 - INFO - Fetched stock data for NFLX
+2025-10-09 10:37:17,540 - INFO - Reach rate limited, watiting 0.18 seconds
+2025-10-09 10:37:18,355 - INFO - Fetched stock data for NVDA
+2025-10-09 10:38:21,939 - INFO - Fetching stock data ...
+2025-10-09 10:38:21,939 - INFO - Successfully retrieved API key for 'stocks'.
+2025-10-09 10:38:22,660 - INFO - Fetched stock data for AAPL
+2025-10-09 10:38:23,309 - INFO - Fetched stock data for GOOGL
+2025-10-09 10:38:23,692 - INFO - Fetched stock data for MSFT
+2025-10-09 10:38:24,391 - INFO - Fetched stock data for AMZN
+2025-10-09 10:38:24,806 - INFO - Fetched stock data for TSLA
+2025-10-09 10:38:24,806 - INFO - Reach rate limited, watiting 57.13 seconds
+2025-10-09 10:39:22,679 - INFO - Fetched stock data for META
+2025-10-09 10:39:23,188 - INFO - Fetched stock data for NFLX
+2025-10-09 10:39:23,189 - INFO - Reach rate limited, watiting 0.12 seconds
+2025-10-09 10:39:24,104 - INFO - Fetched stock data for NVDA
+2025-10-09 10:40:38,296 - INFO - Fetching stock data ...
+2025-10-09 10:40:38,296 - INFO - Successfully retrieved API key for 'stocks'.
+2025-10-09 10:40:39,051 - INFO - Fetched stock data for AAPL
+2025-10-09 10:40:39,670 - INFO - Fetched stock data for GOOGL
+2025-10-09 10:40:40,200 - INFO - Fetched stock data for MSFT
+2025-10-09 10:40:40,695 - INFO - Fetched stock data for AMZN
+2025-10-09 10:40:41,307 - INFO - Fetched stock data for TSLA
+2025-10-09 10:40:41,307 - INFO - Reach rate limited, watiting 56.99 seconds
+2025-10-09 10:41:38,863 - INFO - Fetched stock data for META
+2025-10-09 10:41:38,863 - INFO - Reach rate limited, watiting 0.19 seconds
+2025-10-09 10:41:39,577 - INFO - Fetched stock data for NFLX
+2025-10-09 10:41:39,577 - INFO - Reach rate limited, watiting 0.09 seconds
+2025-10-09 10:41:40,396 - INFO - Fetched stock data for NVDA
+2025-10-09 10:41:41,555 - INFO - Fetching stock data ...
+2025-10-09 10:41:41,556 - INFO - Successfully retrieved API key for 'stocks'.
+2025-10-09 10:41:42,254 - INFO - Fetched stock data for AAPL
+2025-10-09 10:41:42,867 - INFO - Fetched stock data for GOOGL
+2025-10-09 10:41:43,793 - INFO - Fetched stock data for MSFT
+2025-10-09 10:41:44,408 - INFO - Fetched stock data for AMZN
+2025-10-09 10:41:45,011 - INFO - Fetched stock data for TSLA
+2025-10-09 10:41:45,012 - INFO - Reach rate limited, watiting 56.54 seconds
+2025-10-09 10:42:42,574 - INFO - Fetched stock data for META
+2025-10-09 10:42:43,379 - INFO - Fetched stock data for NFLX
+2025-10-09 10:42:43,987 - INFO - Fetched stock data for NVDA
+2025-10-09 10:43:57,417 - INFO - Fetching stock data ...
+2025-10-09 10:43:57,417 - INFO - Successfully retrieved API key for 'stocks'.
+2025-10-09 10:43:58,132 - INFO - Fetched stock data for AAPL
+2025-10-09 10:43:58,645 - INFO - Fetched stock data for GOOGL
+2025-10-09 10:43:59,059 - INFO - Fetched stock data for MSFT
+2025-10-09 10:43:59,460 - INFO - Fetched stock data for AMZN
+2025-10-09 10:43:59,977 - INFO - Fetched stock data for TSLA
+2025-10-09 10:43:59,978 - INFO - Reach rate limited, watiting 57.44 seconds
+2025-10-09 10:44:58,033 - INFO - Fetched stock data for META
+2025-10-09 10:44:58,033 - INFO - Reach rate limited, watiting 0.10 seconds
+2025-10-09 10:44:59,053 - INFO - Fetched stock data for NFLX
+2025-10-09 10:45:00,191 - INFO - Fetched stock data for NVDA
+2025-10-09 10:46:03,022 - INFO - Fetching stock data ...
+2025-10-09 10:46:03,023 - INFO - Successfully retrieved API key for 'stocks'.
+2025-10-09 10:46:03,434 - INFO - Fetched stock data for AAPL
+2025-10-09 10:46:03,847 - INFO - Fetched stock data for GOOGL
+2025-10-09 10:46:04,247 - INFO - Fetched stock data for MSFT
+2025-10-09 10:46:04,620 - INFO - Fetched stock data for AMZN
+2025-10-09 10:46:05,061 - INFO - Fetched stock data for TSLA
+2025-10-09 10:46:05,061 - INFO - Reach rate limited, watiting 57.96 seconds
+2025-10-09 10:47:03,577 - INFO - Fetched stock data for META
+2025-10-09 10:47:04,191 - INFO - Fetched stock data for NFLX
+2025-10-09 10:47:04,822 - INFO - Fetched stock data for NVDA
+2025-10-09 10:47:29,339 - INFO - Fetching stock data ...
+2025-10-09 10:47:29,339 - INFO - Successfully retrieved API key for 'stocks'.
+2025-10-09 10:47:29,994 - INFO - Fetched stock data for AAPL
+2025-10-09 10:47:30,721 - INFO - Fetched stock data for GOOGL
+2025-10-09 10:47:31,331 - INFO - Fetched stock data for MSFT
+2025-10-09 10:47:32,178 - INFO - Fetched stock data for AMZN
+2025-10-09 10:47:32,767 - INFO - Fetched stock data for TSLA
+2025-10-09 10:47:32,767 - INFO - Reach rate limited, watiting 56.57 seconds
+2025-10-09 10:48:30,106 - INFO - Fetched stock data for META
+2025-10-09 10:48:30,623 - INFO - Fetched stock data for NFLX
+2025-10-09 10:48:30,623 - INFO - Reach rate limited, watiting 0.10 seconds
+2025-10-09 10:48:31,170 - INFO - Fetched stock data for NVDA
+2025-10-09 10:48:55,941 - INFO - Fetching stock data ...
+2025-10-09 10:48:55,942 - INFO - Successfully retrieved API key for 'stocks'.
+2025-10-09 10:48:56,420 - INFO - Fetched stock data for AAPL
+2025-10-09 10:48:57,454 - INFO - Fetched stock data for GOOGL
+2025-10-09 10:48:58,165 - INFO - Fetched stock data for MSFT
+2025-10-09 10:48:58,793 - INFO - Fetched stock data for AMZN
+2025-10-09 10:48:59,404 - INFO - Fetched stock data for TSLA
+2025-10-09 10:48:59,404 - INFO - Reach rate limited, watiting 56.54 seconds
+2025-10-09 10:49:56,842 - INFO - Fetched stock data for META
+2025-10-09 10:49:57,462 - INFO - Fetched stock data for NFLX
+2025-10-09 10:49:57,981 - INFO - Fetched stock data for NVDA
+2025-10-09 11:03:10,553 - INFO - Fetching stock data ...
+2025-10-09 11:03:10,553 - INFO - Successfully retrieved API key for 'stocks'.
+2025-10-09 11:03:11,203 - INFO - Fetched stock data for AAPL
+2025-10-09 11:03:11,842 - INFO - Fetched stock data for GOOGL
+2025-10-09 11:03:12,455 - INFO - Fetched stock data for MSFT
+2025-10-09 11:03:13,180 - INFO - Fetched stock data for AMZN
+2025-10-09 11:03:13,910 - INFO - Fetched stock data for TSLA
+2025-10-09 11:03:13,910 - INFO - Reach rate limited, watiting 56.64 seconds
+2025-10-09 11:04:11,275 - INFO - Fetched stock data for META
+2025-10-09 11:04:12,113 - INFO - Fetched stock data for NFLX
+2025-10-09 11:04:13,985 - INFO - Fetched stock data for NVDA
+2025-10-09 11:04:14,106 - INFO - Saved 800 stock records to e:\DE Project\Hadoop Ecosystem\data\raw\stock_20251009_110413.json
+2025-10-10 09:33:15,095 - INFO - Fetching news data ...
+2025-10-10 09:33:15,096 - INFO - Successfully retrieved API key for 'news'.
+2025-10-10 09:33:16,096 - INFO - Fetched news data for business-us
+2025-10-10 09:33:16,096 - INFO - Fetched news data for business-us
+2025-10-10 09:33:16,096 - INFO - Fetched news data for business-us
+2025-10-10 09:33:16,096 - INFO - Fetched news data for business-us
+2025-10-10 09:33:16,097 - INFO - Fetched news data for business-us
+2025-10-10 09:33:16,097 - INFO - Fetched news data for business-us
+2025-10-10 09:33:16,097 - INFO - Fetched news data for business-us
+2025-10-10 09:33:16,097 - INFO - Fetched news data for business-us
+2025-10-10 09:33:16,097 - INFO - Fetched news data for business-us
+2025-10-10 09:33:16,098 - INFO - Fetched news data for business-us
+2025-10-10 09:33:16,098 - INFO - Fetched news data for business-us
+2025-10-10 09:33:16,098 - INFO - Fetched news data for business-us
+2025-10-10 09:33:16,098 - INFO - Fetched news data for business-us
+2025-10-10 09:33:16,098 - INFO - Fetched news data for business-us
+2025-10-10 09:33:16,098 - INFO - Fetched news data for business-us
+2025-10-10 09:33:16,099 - INFO - Fetched news data for business-us
+2025-10-10 09:33:16,099 - INFO - Fetched news data for business-us
+2025-10-10 09:33:16,099 - INFO - Fetched news data for business-us
+2025-10-10 09:33:16,099 - INFO - Fetched news data for business-us
+2025-10-10 09:33:16,594 - INFO - Fetched news data for entertainment-us
+2025-10-10 09:33:16,594 - INFO - Fetched news data for entertainment-us
+2025-10-10 09:33:16,595 - INFO - Fetched news data for entertainment-us
+2025-10-10 09:33:16,595 - INFO - Fetched news data for entertainment-us
+2025-10-10 09:33:16,595 - INFO - Fetched news data for entertainment-us
+2025-10-10 09:33:16,595 - INFO - Fetched news data for entertainment-us
+2025-10-10 09:33:16,595 - INFO - Fetched news data for entertainment-us
+2025-10-10 09:33:16,595 - INFO - Fetched news data for entertainment-us
+2025-10-10 09:33:16,596 - INFO - Fetched news data for entertainment-us
+2025-10-10 09:33:16,596 - INFO - Fetched news data for entertainment-us
+2025-10-10 09:33:16,596 - INFO - Fetched news data for entertainment-us
+2025-10-10 09:33:16,596 - INFO - Fetched news data for entertainment-us
+2025-10-10 09:33:16,596 - INFO - Fetched news data for entertainment-us
+2025-10-10 09:33:16,596 - INFO - Fetched news data for entertainment-us
+2025-10-10 09:33:16,597 - INFO - Fetched news data for entertainment-us
+2025-10-10 09:33:16,597 - INFO - Fetched news data for entertainment-us
+2025-10-10 09:33:16,597 - INFO - Fetched news data for entertainment-us
+2025-10-10 09:33:16,597 - INFO - Fetched news data for entertainment-us
+2025-10-10 09:33:17,209 - INFO - Fetched news data for science-us
+2025-10-10 09:33:17,210 - INFO - Fetched news data for science-us
+2025-10-10 09:33:17,210 - INFO - Fetched news data for science-us
+2025-10-10 09:33:17,210 - INFO - Fetched news data for science-us
+2025-10-10 09:33:17,210 - INFO - Fetched news data for science-us
+2025-10-10 09:33:17,211 - INFO - Fetched news data for science-us
+2025-10-10 09:33:17,211 - INFO - Fetched news data for science-us
+2025-10-10 09:33:17,211 - INFO - Fetched news data for science-us
+2025-10-10 09:33:17,211 - INFO - Fetched news data for science-us
+2025-10-10 09:33:17,211 - INFO - Fetched news data for science-us
+2025-10-10 09:33:17,212 - INFO - Fetched news data for science-us
+2025-10-10 09:33:17,212 - INFO - Fetched news data for science-us
+2025-10-10 09:33:17,212 - INFO - Fetched news data for science-us
+2025-10-10 09:33:17,212 - INFO - Fetched news data for science-us
+2025-10-10 09:33:17,212 - INFO - Fetched news data for science-us
+2025-10-10 09:33:17,213 - INFO - Fetched news data for science-us
+2025-10-10 09:33:17,213 - INFO - Fetched news data for science-us
+2025-10-10 09:33:17,213 - INFO - Fetched news data for science-us
+2025-10-10 09:33:17,213 - INFO - Fetched news data for science-us
+2025-10-10 09:33:17,213 - INFO - Fetched news data for science-us
+2025-10-10 09:33:17,731 - INFO - Fetched news data for sports-us
+2025-10-10 09:33:17,732 - INFO - Fetched news data for sports-us
+2025-10-10 09:33:17,732 - INFO - Fetched news data for sports-us
+2025-10-10 09:33:17,732 - INFO - Fetched news data for sports-us
+2025-10-10 09:33:17,732 - INFO - Fetched news data for sports-us
+2025-10-10 09:33:17,732 - INFO - Fetched news data for sports-us
+2025-10-10 09:33:17,733 - INFO - Fetched news data for sports-us
+2025-10-10 09:33:17,733 - INFO - Fetched news data for sports-us
+2025-10-10 09:33:17,733 - INFO - Fetched news data for sports-us
+2025-10-10 09:33:17,733 - INFO - Fetched news data for sports-us
+2025-10-10 09:33:17,733 - INFO - Fetched news data for sports-us
+2025-10-10 09:33:17,734 - INFO - Fetched news data for sports-us
+2025-10-10 09:33:17,734 - INFO - Fetched news data for sports-us
+2025-10-10 09:33:17,734 - INFO - Fetched news data for sports-us
+2025-10-10 09:33:17,734 - INFO - Fetched news data for sports-us
+2025-10-10 09:33:17,735 - INFO - Fetched news data for sports-us
+2025-10-10 09:33:17,735 - INFO - Fetched news data for sports-us
+2025-10-10 09:33:17,735 - INFO - Fetched news data for sports-us
+2025-10-10 09:33:17,735 - INFO - Fetched news data for sports-us
+2025-10-10 09:33:17,735 - INFO - Fetched news data for sports-us
+2025-10-10 09:33:18,234 - INFO - Fetched news data for technology-us
+2025-10-10 09:33:18,234 - INFO - Fetched news data for technology-us
+2025-10-10 09:33:18,234 - INFO - Fetched news data for technology-us
+2025-10-10 09:33:18,235 - INFO - Fetched news data for technology-us
+2025-10-10 09:33:18,235 - INFO - Fetched news data for technology-us
+2025-10-10 09:33:18,235 - INFO - Fetched news data for technology-us
+2025-10-10 09:33:18,235 - INFO - Fetched news data for technology-us
+2025-10-10 09:33:18,235 - INFO - Fetched news data for technology-us
+2025-10-10 09:33:18,236 - INFO - Fetched news data for technology-us
+2025-10-10 09:33:18,236 - INFO - Fetched news data for technology-us
+2025-10-10 09:33:18,236 - INFO - Fetched news data for technology-us
+2025-10-10 09:33:18,236 - INFO - Fetched news data for technology-us
+2025-10-10 09:33:18,236 - INFO - Fetched news data for technology-us
+2025-10-10 09:33:18,236 - INFO - Fetched news data for technology-us
+2025-10-10 09:33:18,237 - INFO - Fetched news data for technology-us
+2025-10-10 09:33:18,237 - INFO - Fetched news data for technology-us
+2025-10-10 09:33:18,237 - INFO - Fetched news data for technology-us
+2025-10-10 09:33:18,237 - INFO - Fetched news data for technology-us
+2025-10-10 09:33:18,237 - INFO - Fetched news data for technology-us
+2025-10-10 09:33:18,238 - INFO - Fetched news data for technology-us
+2025-10-10 09:33:18,247 - INFO - Reach rate limited, watiting 56.86 seconds
+2025-10-10 09:34:18,968 - INFO - Reach rate limited, watiting 57.43 seconds
+2025-10-10 09:35:18,045 - INFO - Reach rate limited, watiting 0.01 seconds
+2025-10-10 09:35:19,579 - INFO - Reach rate limited, watiting 57.44 seconds
+2025-10-10 09:36:18,461 - INFO - Reach rate limited, watiting 0.10 seconds
+2025-10-10 09:36:20,203 - INFO - Reach rate limited, watiting 57.33 seconds
+2025-10-10 09:37:18,984 - INFO - Reach rate limited, watiting 0.40 seconds
+2025-10-10 09:37:21,025 - INFO - Reach rate limited, watiting 57.14 seconds
+2025-10-10 09:37:35,678 - INFO - Fetching news data ...
+2025-10-10 09:37:35,678 - INFO - Successfully retrieved API key for 'news'.
+2025-10-10 09:37:42,122 - INFO - Fetched news data for business-us
+2025-10-10 09:37:42,122 - INFO - Fetched news data for business-us
+2025-10-10 09:37:42,123 - INFO - Fetched news data for business-us
+2025-10-10 09:37:42,123 - INFO - Fetched news data for business-us
+2025-10-10 09:37:42,123 - INFO - Fetched news data for business-us
+2025-10-10 09:37:42,123 - INFO - Fetched news data for business-us
+2025-10-10 09:37:42,123 - INFO - Fetched news data for business-us
+2025-10-10 09:37:42,124 - INFO - Fetched news data for business-us
+2025-10-10 09:37:42,124 - INFO - Fetched news data for business-us
+2025-10-10 09:37:42,124 - INFO - Fetched news data for business-us
+2025-10-10 09:37:42,124 - INFO - Fetched news data for business-us
+2025-10-10 09:37:42,124 - INFO - Fetched news data for business-us
+2025-10-10 09:37:42,125 - INFO - Fetched news data for business-us
+2025-10-10 09:37:42,125 - INFO - Fetched news data for business-us
+2025-10-10 09:37:42,125 - INFO - Fetched news data for business-us
+2025-10-10 09:37:42,125 - INFO - Fetched news data for business-us
+2025-10-10 09:37:42,125 - INFO - Fetched news data for business-us
+2025-10-10 09:37:42,125 - INFO - Fetched news data for business-us
+2025-10-10 09:37:42,126 - INFO - Fetched news data for business-us
+2025-10-10 09:37:42,549 - INFO - Fetched news data for entertainment-us
+2025-10-10 09:37:42,549 - INFO - Fetched news data for entertainment-us
+2025-10-10 09:37:42,550 - INFO - Fetched news data for entertainment-us
+2025-10-10 09:37:42,550 - INFO - Fetched news data for entertainment-us
+2025-10-10 09:37:42,550 - INFO - Fetched news data for entertainment-us
+2025-10-10 09:37:42,550 - INFO - Fetched news data for entertainment-us
+2025-10-10 09:37:42,550 - INFO - Fetched news data for entertainment-us
+2025-10-10 09:37:42,551 - INFO - Fetched news data for entertainment-us
+2025-10-10 09:37:42,551 - INFO - Fetched news data for entertainment-us
+2025-10-10 09:37:42,551 - INFO - Fetched news data for entertainment-us
+2025-10-10 09:37:42,551 - INFO - Fetched news data for entertainment-us
+2025-10-10 09:37:42,551 - INFO - Fetched news data for entertainment-us
+2025-10-10 09:37:42,551 - INFO - Fetched news data for entertainment-us
+2025-10-10 09:37:42,552 - INFO - Fetched news data for entertainment-us
+2025-10-10 09:37:42,552 - INFO - Fetched news data for entertainment-us
+2025-10-10 09:37:42,552 - INFO - Fetched news data for entertainment-us
+2025-10-10 09:37:42,552 - INFO - Fetched news data for entertainment-us
+2025-10-10 09:37:42,552 - INFO - Fetched news data for entertainment-us
+2025-10-10 09:37:43,148 - INFO - Fetched news data for science-us
+2025-10-10 09:37:43,149 - INFO - Fetched news data for science-us
+2025-10-10 09:37:43,149 - INFO - Fetched news data for science-us
+2025-10-10 09:37:43,149 - INFO - Fetched news data for science-us
+2025-10-10 09:37:43,149 - INFO - Fetched news data for science-us
+2025-10-10 09:37:43,149 - INFO - Fetched news data for science-us
+2025-10-10 09:37:43,150 - INFO - Fetched news data for science-us
+2025-10-10 09:37:43,150 - INFO - Fetched news data for science-us
+2025-10-10 09:37:43,150 - INFO - Fetched news data for science-us
+2025-10-10 09:37:43,150 - INFO - Fetched news data for science-us
+2025-10-10 09:37:43,150 - INFO - Fetched news data for science-us
+2025-10-10 09:37:43,151 - INFO - Fetched news data for science-us
+2025-10-10 09:37:43,151 - INFO - Fetched news data for science-us
+2025-10-10 09:37:43,151 - INFO - Fetched news data for science-us
+2025-10-10 09:37:43,151 - INFO - Fetched news data for science-us
+2025-10-10 09:37:43,151 - INFO - Fetched news data for science-us
+2025-10-10 09:37:43,151 - INFO - Fetched news data for science-us
+2025-10-10 09:37:43,152 - INFO - Fetched news data for science-us
+2025-10-10 09:37:43,152 - INFO - Fetched news data for science-us
+2025-10-10 09:37:43,152 - INFO - Fetched news data for science-us
+2025-10-10 09:37:43,765 - INFO - Fetched news data for sports-us
+2025-10-10 09:37:43,766 - INFO - Fetched news data for sports-us
+2025-10-10 09:37:43,766 - INFO - Fetched news data for sports-us
+2025-10-10 09:37:43,766 - INFO - Fetched news data for sports-us
+2025-10-10 09:37:43,766 - INFO - Fetched news data for sports-us
+2025-10-10 09:37:43,767 - INFO - Fetched news data for sports-us
+2025-10-10 09:37:43,767 - INFO - Fetched news data for sports-us
+2025-10-10 09:37:43,767 - INFO - Fetched news data for sports-us
+2025-10-10 09:37:43,767 - INFO - Fetched news data for sports-us
+2025-10-10 09:37:43,767 - INFO - Fetched news data for sports-us
+2025-10-10 09:37:43,767 - INFO - Fetched news data for sports-us
+2025-10-10 09:37:43,767 - INFO - Fetched news data for sports-us
+2025-10-10 09:37:43,768 - INFO - Fetched news data for sports-us
+2025-10-10 09:37:43,768 - INFO - Fetched news data for sports-us
+2025-10-10 09:37:43,768 - INFO - Fetched news data for sports-us
+2025-10-10 09:37:43,768 - INFO - Fetched news data for sports-us
+2025-10-10 09:37:43,769 - INFO - Fetched news data for sports-us
+2025-10-10 09:37:43,769 - INFO - Fetched news data for sports-us
+2025-10-10 09:37:43,769 - INFO - Fetched news data for sports-us
+2025-10-10 09:37:43,769 - INFO - Fetched news data for sports-us
+2025-10-10 09:37:44,278 - INFO - Fetched news data for technology-us
+2025-10-10 09:37:44,278 - INFO - Fetched news data for technology-us
+2025-10-10 09:37:44,279 - INFO - Fetched news data for technology-us
+2025-10-10 09:37:44,279 - INFO - Fetched news data for technology-us
+2025-10-10 09:37:44,279 - INFO - Fetched news data for technology-us
+2025-10-10 09:37:44,279 - INFO - Fetched news data for technology-us
+2025-10-10 09:37:44,279 - INFO - Fetched news data for technology-us
+2025-10-10 09:37:44,280 - INFO - Fetched news data for technology-us
+2025-10-10 09:37:44,280 - INFO - Fetched news data for technology-us
+2025-10-10 09:37:44,280 - INFO - Fetched news data for technology-us
+2025-10-10 09:37:44,280 - INFO - Fetched news data for technology-us
+2025-10-10 09:37:44,280 - INFO - Fetched news data for technology-us
+2025-10-10 09:37:44,281 - INFO - Fetched news data for technology-us
+2025-10-10 09:37:44,281 - INFO - Fetched news data for technology-us
+2025-10-10 09:37:44,281 - INFO - Fetched news data for technology-us
+2025-10-10 09:37:44,281 - INFO - Fetched news data for technology-us
+2025-10-10 09:37:44,281 - INFO - Fetched news data for technology-us
+2025-10-10 09:37:44,282 - INFO - Fetched news data for technology-us
+2025-10-10 09:37:44,282 - INFO - Fetched news data for technology-us
+2025-10-10 09:37:44,282 - INFO - Fetched news data for technology-us
+2025-10-10 09:37:51,857 - INFO - Reach rate limited, watiting 43.82 seconds
+2025-10-10 09:38:36,188 - INFO - Reach rate limited, watiting 5.94 seconds
+2025-10-10 09:38:43,045 - INFO - Reach rate limited, watiting 0.11 seconds
+2025-10-10 09:38:43,665 - INFO - Reach rate limited, watiting 0.11 seconds
+2025-10-10 09:38:44,174 - INFO - Reach rate limited, watiting 0.11 seconds
+2025-10-10 09:38:44,686 - INFO - Reach rate limited, watiting 0.20 seconds
+2025-10-10 09:38:45,398 - INFO - Reach rate limited, watiting 0.01 seconds
+2025-10-10 09:38:45,920 - INFO - Reach rate limited, watiting 0.01 seconds
+2025-10-10 10:35:30,327 - INFO - Fetching news data ...
+2025-10-10 10:35:30,328 - INFO - Successfully retrieved API key for 'news'.
+2025-10-10 10:35:30,805 - INFO - Fetched 18 articles for business-us
+2025-10-10 10:35:31,281 - INFO - Fetched 17 articles for entertainment-us
+2025-10-10 10:35:31,706 - INFO - Fetched 20 articles for science-us
+2025-10-10 10:35:32,159 - INFO - Fetched 20 articles for sports-us
+2025-10-10 10:35:32,588 - INFO - Fetched 20 articles for technology-us
+2025-10-10 10:35:33,024 - INFO - Fetched 0 articles for business-gb
+2025-10-10 10:35:33,427 - INFO - Fetched 0 articles for entertainment-gb
+2025-10-10 10:35:34,652 - INFO - Fetched 0 articles for science-gb
+2025-10-10 10:35:35,094 - INFO - Fetched 0 articles for sports-gb
+2025-10-10 10:35:35,494 - INFO - Fetched 0 articles for technology-gb
+2025-10-10 10:35:35,930 - INFO - Fetched 0 articles for business-vn
+2025-10-10 10:35:37,049 - INFO - Fetched 0 articles for entertainment-vn
+2025-10-10 10:35:37,486 - INFO - Fetched 0 articles for science-vn
+2025-10-10 10:35:37,882 - INFO - Fetched 0 articles for sports-vn
+2025-10-10 10:35:38,296 - INFO - Fetched 0 articles for technology-vn
+2025-10-10 10:35:38,695 - INFO - Fetched 0 articles for business-jp
+2025-10-10 10:35:39,154 - INFO - Fetched 0 articles for entertainment-jp
+2025-10-10 10:35:39,587 - INFO - Fetched 0 articles for science-jp
+2025-10-10 10:35:39,993 - INFO - Fetched 0 articles for sports-jp
+2025-10-10 10:35:40,432 - INFO - Fetched 0 articles for technology-jp
+2025-10-10 10:35:41,640 - INFO - Fetched 0 articles for business-kr
+2025-10-10 10:35:42,804 - INFO - Fetched 0 articles for entertainment-kr
+2025-10-10 10:35:43,234 - INFO - Fetched 0 articles for science-kr
+2025-10-10 10:35:43,680 - INFO - Fetched 0 articles for sports-kr
+2025-10-10 10:35:44,102 - INFO - Fetched 0 articles for technology-kr
+2025-10-10 10:35:44,513 - INFO - Fetched 0 articles for business-cn
+2025-10-10 10:35:44,926 - INFO - Fetched 0 articles for entertainment-cn
+2025-10-10 10:35:45,362 - INFO - Fetched 0 articles for science-cn
+2025-10-10 10:35:45,794 - INFO - Fetched 0 articles for sports-cn
+2025-10-10 10:35:46,220 - INFO - Fetched 0 articles for technology-cn
+2025-10-10 10:35:46,225 - INFO - Saved 95 news record to e:\DE Project\Hadoop Ecosystem\data\raw\news_20251010_103546.json
+2025-10-10 10:46:41,815 - INFO - Fetching news data ...
+2025-10-10 10:46:41,816 - INFO - Successfully retrieved API key for 'news'.
+2025-10-10 10:46:42,882 - INFO - Fetched 100 articles for football
+2025-10-10 10:46:43,419 - INFO - Fetched 100 articles for bitcoin
+2025-10-10 10:46:43,961 - INFO - Fetched 100 articles for technology
+2025-10-10 10:46:44,539 - INFO - Fetched 100 articles for game
+2025-10-10 10:46:45,841 - INFO - Fetched 100 articles for music
+2025-10-10 10:46:45,855 - INFO - Saved 500 news record to e:\DE Project\Hadoop Ecosystem\data\raw\news_20251010_104645.json
+2025-10-10 10:49:50,878 - INFO - Fetching news data ...
+2025-10-10 10:49:50,878 - INFO - Successfully retrieved API key for 'news'.
+2025-10-10 10:49:51,312 - INFO - Fetched 100 articles for football
+2025-10-10 10:49:52,016 - INFO - Fetched 100 articles for bitcoin
+2025-10-10 10:49:52,417 - INFO - Fetched 100 articles for technology
+2025-10-10 10:49:54,334 - INFO - Fetched 100 articles for game
+2025-10-10 10:49:55,296 - INFO - Fetched 100 articles for music

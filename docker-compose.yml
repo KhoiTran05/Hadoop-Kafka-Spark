@@ -1,0 +1,400 @@
+version: '3.8'
+
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.0
+    hostname: zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    volumes:
+      - zookeeper_data:/var/lib/zookeeper/data
+
+  kafka:
+    image: confluentinc/cp-kafka:7.4.0
+    hostname: kafka
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: true
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    depends_on:
+      - zookeeper
+
+  redis:
+    image: redis:7-alpine
+    hostname: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+
+  # Postgres cho Airflow Metadata
+  postgres:
+    image: postgres:13
+    hostname: postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: airflow
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      # Bỏ mount ./sql vì Airflow sẽ tự init schema
+
+  # ------------------------------------------------------------------
+  # HADOOP HDFS (Storage Layer)
+  # ------------------------------------------------------------------
+  namenode:
+    image: apache/hadoop:3.3.6
+    hostname: namenode
+    command: ["hdfs", "namenode"]
+    ports:
+      - "9870:9870"
+      - "8020:8020"
+    volumes:
+      - hadoop_namenode:/hadoop/dfs/name
+      # Mount thư mục data (ví dụ: chứa file local)
+      - ./data:/data/local_input 
+    environment:
+      - CLUSTER_NAME=realdata-cluster
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:8020
+      - HDFS_CONF_dfs_namenode_datanode_registration_ip___hostname___check=false
+      - HDFS_CONF_dfs_permissions_enabled=false
+      - HDFS_CONF_dfs_webhdfs_enabled=true
+      - HDFS_CONF_dfs_replication=2 # Đặt là 2 vì có 2 datanode
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9870"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  datanode1:
+    image: apache/hadoop:3.3.6
+    hostname: datanode1
+    command: ["hdfs", "datanode"]
+    ports:
+      - "9864:9864"
+    volumes:
+      - hadoop_datanode1:/hadoop/dfs/data
+    environment:
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:8020
+    depends_on:
+      namenode:
+        condition: service_healthy
+
+  datanode2:
+    image: apache/hadoop:3.3.6
+    hostname: datanode2  
+    command: ["hdfs", "datanode"]
+    ports:
+      - "9865:9864" # Sửa port 9864 thành 9865 để tránh xung đột
+    volumes:
+      - hadoop_datanode2:/hadoop/dfs/data
+    environment:
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:8020
+    depends_on:
+      namenode:
+        condition: service_healthy
+
+  # ------------------------------------------------------------------
+  # HIVE DWH (Warehouse Layer)
+  # ------------------------------------------------------------------
+  hive-metastore-db:
+    image: postgres:13
+    hostname: hive-metastore-db
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_DB: metastore
+      POSTGRES_USER: hive
+      POSTGRES_PASSWORD: hive
+    volumes:
+      - hive_metastore_data:/var/lib/postgresql/data
+
+  hive-metastore:
+    image: apache/hive:3.1.3
+    hostname: hive-metastore
+    ports:
+      - "9083:9083"
+    environment:
+      SERVICE_NAME: metastore
+      DB_DRIVER: postgres
+      SERVICE_OPTS: >-
+        -Djavax.jdo.option.ConnectionDriverName=org.postgresql.Driver
+        -Djavax.jdo.option.ConnectionURL=jdbc:postgresql://hive-metastore-db:5432/metastore
+        -Djavax.jdo.option.ConnectionUserName=hive
+        -Djavax.jdo.option.ConnectionPassword=hive
+    depends_on:
+      - hive-metastore-db
+      - namenode
+
+  hive-server:
+    image: apache/hive:3.1.3
+    hostname: hive-server
+    ports:
+      - "10000:10000"
+      - "10002:10002"
+    environment:
+      SERVICE_NAME: hiveserver2
+      SERVICE_OPTS: >-
+        -Dhive.metastore.uris=thrift://hive-metastore:9083
+      IS_RESUME: "true"
+    depends_on:
+      - hive-metastore
+    volumes:
+      # Mount thư mục chứa HQL DDLs và scripts
+      - ./processing/hive:/app/hive_scripts
+      - ./data:/app/data # Mount data để load vào Hive
+
+  # ------------------------------------------------------------------
+  # PROCESSING (Spark, Sqoop, Pig)
+  # ------------------------------------------------------------------
+  spark-master:
+    image: bitnami/spark:3.5.0
+    hostname: spark-master
+    ports:
+      - "8080:8080"
+      - "7077:7077"
+    volumes:
+      # Mount code Spark và thư viện common
+      - ./processing/spark:/app/spark
+      - ./common:/app/common
+      - ./data:/app/data
+    environment:
+      - SPARK_MODE=master
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
+    depends_on:
+      - namenode
+
+  spark-worker1:
+    image: bitnami/spark:3.5.0
+    hostname: spark-worker1
+    ports:
+      - "8081:8081"
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077
+      - SPARK_WORKER_MEMORY=4G
+      - SPARK_WORKER_CORES=2
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
+    volumes:
+      # Mount code Spark và thư viện common
+      - ./processing/spark:/app/spark
+      - ./common:/app/common
+      - ./data:/app/data
+    depends_on:
+      - spark-master
+
+  spark-worker2:
+    image: bitnami/spark:3.5.0
+    hostname: spark-worker2
+    ports:
+      - "8082:8081"
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077
+      - SPARK_WORKER_MEMORY=4G
+      - SPARK_WORKER_CORES=2
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
+    volumes:
+      # Mount code Spark và thư viện common
+      - ./processing/spark:/app/spark
+      - ./common:/app/common
+      - ./data:/app/data
+    depends_on:
+      - spark-master
+
+  # Service để chạy Sqoop (đổi tên từ sqloop thành sqoop)
+  # sqoop:
+  #   build:
+  #     context: .
+  #     dockerfile: infrastructure/docker/Dockerfile.sqoop # Sửa đường dẫn
+  #   hostname: sqoop
+  #   volumes:
+  #     # Mount các job script của Sqoop
+  #     - ./ingestion/sqoop_jobs:/app/scripts
+  #     - ./data:/app/data
+  #   environment:
+  #     - CORE_CONF_fs_defaultFS=hdfs://namenode:8020
+  #     - HADOOP_CONF_DIR=/opt/hadoop/etc/hadoop
+  #   depends_on:
+  #     - namenode
+  #     - postgres
+  #     - hive-metastore-db # Thêm dependency
+  #   command: tail -f /dev/null # Giữ container chạy
+
+  # # Service để chạy Pig
+  # pig:
+  #   build:
+  #     context: .
+  #     dockerfile: infrastructure/docker/Dockerfile.pig # Sửa đường dẫn
+  #   hostname: pig
+  #   volumes:
+  #     # Mount các script của Pig
+  #     - ./processing/pig_scripts:/app/scripts
+  #     - ./data:/app/data
+  #   environment:
+  #     - CORE_CONF_fs_defaultFS=hdfs://namenode:8020
+  #   depends_on:
+  #     namenode:
+  #       condition: service_healthy
+  #   command: tail -f /dev/null # Giữ container chạy
+
+  # ------------------------------------------------------------------
+  # INGESTION & ORCHESTRATION (NiFi, Airflow)
+  # ------------------------------------------------------------------
+  # nifi:
+  #   image: apache/nifi:1.23.2
+  #   hostname: nifi
+  #   ports:
+  #     - "8443:8443"
+  #   environment:
+  #     - NIFI_WEB_HTTPS_PORT=8443
+  #     - NIFI_ZK_CONNECT_STRING=zookeeper:2181
+  #     # ... (các biến env khác của NiFi) ...
+  #   volumes:
+  #     - nifi_data:/opt/nifi/nifi-current/flowfile_repository
+  #     - nifi_logs:/opt/nifi/nifi-current/logs
+  #     # Mount các template của NiFi
+  #     - ./ingestion/nifi_templates:/opt/nifi/nifi-current/conf/flows
+
+  airflow-webserver:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/Dockerfile.airflow # Sửa đường dẫn
+    hostname: airflow-webserver
+    ports:
+      - "8083:8080"
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres/airflow
+      # ... (các biến env khác của Airflow) ...
+      # Thêm PYTHONPATH để Airflow import được từ common và ingestion
+      - PYTHONPATH=/opt/airflow
+    volumes:
+      # Mount các thư mục code cần thiết cho Airflow
+      - ./airflow/dags:/opt/airflow/dags
+      - ./ingestion:/opt/airflow/ingestion
+      - ./common:/opt/airflow/common
+      - ./data:/data # Dùng chung thư mục data
+      - ./logs:/opt/airflow/logs # Dùng chung thư mục logs
+    depends_on:
+      - postgres
+      - redis
+    command: webserver
+
+  airflow-scheduler:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/Dockerfile.airflow # Sửa đường dẫn
+    hostname: airflow-scheduler
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres/airflow
+      # ... (các biến env khác của Airflow) ...
+      # Thêm PYTHONPATH để Airflow import được từ common và ingestion
+      - PYTHONPATH=/opt/airflow
+    volumes:
+      # Mount các thư mục code cần thiết cho Airflow
+      - ./airflow/dags:/opt/airflow/dags
+      - ./ingestion:/opt/airflow/ingestion
+      - ./common:/opt/airflow/common
+      - ./data:/data # Dùng chung thư mục data
+      - ./logs:/opt/airflow/logs # Dùng chung thư mục logs
+    depends_on:
+      - postgres
+      - redis
+    command: scheduler
+
+  # ------------------------------------------------------------------
+  # ANALYTICS & MONITORING (ELK, Prometheus, Grafana)
+  # ------------------------------------------------------------------
+  # elasticsearch:
+  #   image: docker.elastic.co/elasticsearch/elasticsearch:8.10.0
+  #   hostname: elasticsearch
+  #   ports:
+  #     - "9200:9200"
+  #     - "9300:9300"
+  #   environment:
+  #     - discovery.type=single-node
+  #     - xpack.security.enabled=false
+  #     - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
+  #   volumes:
+  #     - elasticsearch_data:/usr/share/elasticsearch/data
+
+  # kibana:
+  #   image: docker.elastic.co/kibana/kibana:8.10.0
+  #   hostname: kibana
+  #   ports:
+  #     - "5601:5601"
+  #   environment:
+  #     - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+  #   depends_on:
+  #     - elasticsearch
+
+  # prometheus:
+  #   image: prom/prometheus:latest
+  #   hostname: prometheus
+  #   ports:
+  #     - "9090:9090"
+  #   volumes:
+  #     # Sửa đường dẫn tới file config Prometheus
+  #     - ./infrastructure/monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+  #     - prometheus_data:/prometheus
+  #   command:
+  #     - '--config.file=/etc/prometheus/prometheus.yml'
+  #     # ... (các command khác) ...
+
+  # grafana:
+  #   image: grafana/grafana:latest
+  #   hostname: grafana
+  #   ports:
+  #     - "3000:3000"
+  #   volumes:
+  #     - grafana_data:/var/lib/grafana
+  #     # Sửa đường dẫn tới provisioning
+  #     - ./infrastructure/monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
+  #     - ./infrastructure/monitoring/grafana/datasources:/etc/grafana/provisioning/datasources
+  #   environment:
+  #     - GF_SECURITY_ADMIN_PASSWORD=admin
+  #     - GF_USERS_ALLOW_SIGN_UP=false
+
+# ------------------------------------------------------------------
+# VOLUMES
+# ------------------------------------------------------------------
+volumes:
+  zookeeper_data:
+  kafka_data:
+  redis_data:
+  postgres_data:
+  hadoop_namenode:
+  hadoop_datanode1:
+  hadoop_datanode2:
+  hive_metastore_data:
+  # nifi_data:
+  # nifi_logs:
+  # elasticsearch_data:
+  # prometheus_data:
+  # grafana_data:

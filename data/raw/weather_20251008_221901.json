@@ -1,0 +1,122 @@
+[
+  {
+    "city": "New York,US",
+    "country": "US",
+    "weather_main": "Clouds",
+    "weather_description": "overcast clouds",
+    "temperature": 16.89,
+    "pressure": 1014,
+    "humidity": 89,
+    "visibility": 10000,
+    "wind_speed": 5.42,
+    "timestamp": "2025-10-08T22:18:59.126087"
+  },
+  {
+    "city": "Los Angeles,US",
+    "country": "US",
+    "weather_main": "Clear",
+    "weather_description": "clear sky",
+    "temperature": 16.06,
+    "pressure": 1013,
+    "humidity": 89,
+    "visibility": 10000,
+    "wind_speed": 1.14,
+    "timestamp": "2025-10-08T22:18:59.276195"
+  },
+  {
+    "city": "Chicago,US",
+    "country": "US",
+    "weather_main": "Clear",
+    "weather_description": "clear sky",
+    "temperature": 14.53,
+    "pressure": 1029,
+    "humidity": 68,
+    "visibility": 10000,
+    "wind_speed": 4.62,
+    "timestamp": "2025-10-08T22:18:59.582550"
+  },
+  {
+    "city": "Houston,US",
+    "country": "US",
+    "weather_main": "Clouds",
+    "weather_description": "overcast clouds",
+    "temperature": 27.77,
+    "pressure": 1018,
+    "humidity": 76,
+    "visibility": 10000,
+    "wind_speed": 3.7,
+    "timestamp": "2025-10-08T22:18:59.742854"
+  },
+  {
+    "city": "Phoenix,US",
+    "country": "US",
+    "weather_main": "Clouds",
+    "weather_description": "overcast clouds",
+    "temperature": 22.05,
+    "pressure": 1013,
+    "humidity": 41,
+    "visibility": 10000,
+    "wind_speed": 1.59,
+    "timestamp": "2025-10-08T22:18:59.888606"
+  },
+  {
+    "city": "Philadelphia,US",
+    "country": "US",
+    "weather_main": "Clouds",
+    "weather_description": "overcast clouds",
+    "temperature": 17.49,
+    "pressure": 1016,
+    "humidity": 85,
+    "visibility": 10000,
+    "wind_speed": 5.2,
+    "timestamp": "2025-10-08T22:19:00.211356"
+  },
+  {
+    "city": "San Antonio,US",
+    "country": "US",
+    "weather_main": "Clouds",
+    "weather_description": "overcast clouds",
+    "temperature": 27.81,
+    "pressure": 1020,
+    "humidity": 68,
+    "visibility": 10000,
+    "wind_speed": 4.38,
+    "timestamp": "2025-10-08T22:19:00.494948"
+  },
+  {
+    "city": "San Diego,US",
+    "country": "US",
+    "weather_main": "Clouds",
+    "weather_description": "scattered clouds",
+    "temperature": 17.26,
+    "pressure": 1013,
+    "humidity": 89,
+    "visibility": 10000,
+    "wind_speed": 2.77,
+    "timestamp": "2025-10-08T22:19:00.761314"
+  },
+  {
+    "city": "Ha Noi,VN",
+    "country": "VN",
+    "weather_main": "Clear",
+    "weather_description": "clear sky",
+    "temperature": 24.97,
+    "pressure": 1013,
+    "humidity": 85,
+    "visibility": 10000,
+    "wind_speed": 2.7,
+    "timestamp": "2025-10-08T22:19:00.908642"
+  },
+  {
+    "city": "Ho Chi Minh City, VN",
+    "country": "VN",
+    "weather_main": "Clouds",
+    "weather_description": "overcast clouds",
+    "temperature": 26.99,
+    "pressure": 1011,
+    "humidity": 91,
+    "visibility": 4294,
+    "wind_speed": 1.88,
+    "timestamp": "2025-10-08T22:19:01.064916"
+  }
+]

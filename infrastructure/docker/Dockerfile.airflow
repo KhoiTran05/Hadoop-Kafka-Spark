@@ -1,0 +1,22 @@
+ARG AIRFLOW_VERSION=2.7.1
+ARG PYTHON_VERSION=3.10
+FROM apache/airflow:${AIRFLOW_VERSION}-python${PYTHON_VERSION}
+
+USER airflow
+
+COPY infrastructure/docker/requirements_airflow.txt /requirements_airflow.txt
+
+RUN pip install --no-cache-dir \
+    apache-airflow-providers-postgres==5.10.1 \
+    apache-airflow-providers-apache-hive==5.1.0 \
+    apache-airflow-providers-apache-hdfs==4.3.0 \
+    apache-airflow-providers-cncf-kubernetes \
+    pyspark==3.5.0
+
+RUN pip install --no-cache-dir -r /requirements_airflow.txt
+
+ENV SPARK_HOME /usr/local/spark
+ENV PATH $SPARK_HOME/bin:$PATH
+
+WORKDIR /opt/airflow
+USER airflow
