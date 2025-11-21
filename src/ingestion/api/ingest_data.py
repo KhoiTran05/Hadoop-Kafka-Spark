@@ -149,7 +149,7 @@ def get_live_football_data():
         logger.error(f"Error processing football data: {e}")
         return None
 
-# Fetch 30 days football matches n (Batch)
+# Fetch 30 days football matches n (Airflow Batch)
 def get_historical_football_data(days_ago=30):
     logger.info("Fetching 30 days historical football data ...")
     
