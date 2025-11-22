@@ -28,7 +28,7 @@ dag = DAG(
     tags = ['hadoop', 'hive', 'spark']
 )
 
-from ingestion.api.ingest_data import fetch_weather_data, fetch_stock_data, validate_data
+from ingestion.api.realtime_ingest_service import fetch_weather_data, fetch_stock_data, validate_data
 
 #Task definitions
 start_task = EmptyOperator(
