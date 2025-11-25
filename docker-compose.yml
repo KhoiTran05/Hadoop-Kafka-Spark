@@ -82,11 +82,8 @@ services:
       POSTGRES_PASSWORD: airflow
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      # Bỏ mount ./sql vì Airflow sẽ tự init schema
-
-  # ------------------------------------------------------------------
+      
   # HADOOP HDFS (Storage Layer)
-  # ------------------------------------------------------------------
   namenode:
     image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8 
     container_name: namenode
@@ -145,9 +142,7 @@ services:
     depends_on:
       - namenode
 
-  # ------------------------------------------------------------------
-  # HIVE DWH (Warehouse Layer)
-  # ------------------------------------------------------------------
+  # HIVE DWH 
   hive-metastore-postgresql:
     image: bde2020/hive-metastore-postgresql:2.3.0
     container_name: hive-metastore-db 
@@ -174,7 +169,7 @@ services:
       - "9083:9083"
     volumes:
       - ./infrastructure/hive/conf/hive-site.xml:/opt/hive/conf/hive-site.xml 
-      - ./src/processing/hive/warehouse:/opt/hive/data/warehouse 
+      - ./src/hive/warehouse:/opt/hive/data/warehouse 
     depends_on:
       - hive-metastore-postgresql
       - namenode 
@@ -190,16 +185,14 @@ services:
       - "10000:10000"
       - "10002:10002"
     volumes:
-      - ./src/processing/hive/warehouse:/opt/hive/data/warehouse 
+      - ./src/hive/warehouse:/opt/hive/data/warehouse 
       - ./infrastructure/hive/conf/hive-site.xml:/opt/hive/conf/hive-site.xml 
-      - ./src/processing/hive/scripts:/opt/hive/scripts
+      - ./scripts:/opt/hive/scripts
       - ./data:/data
     depends_on:
       - hive-metastore
 
-  # ------------------------------------------------------------------
-  # PROCESSING (Spark, Sqoop, Pig)
-  # ------------------------------------------------------------------
+  # SPARK
   spark-master:
     image: bitnami/spark:3.5.0
     hostname: spark-master
@@ -207,9 +200,10 @@ services:
       - "8080:8080"
       - "7077:7077"
     volumes:
-      - ./src/processing/spark:/app/spark
-      - ./common:/app/common
-      - ./data:/app/data
+      - ./src/streaming:/opt/bitnami/spark/streaming
+      - ./utils:/opt/bitnami/spark/utils
+      - ./data:/opt/bitnami/spark/data
+      - ./config:/opt/bitnami/spark/conf
     environment:
       - SPARK_MODE=master
       - SPARK_RPC_AUTHENTICATION_ENABLED=no
@@ -234,9 +228,10 @@ services:
       - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
       - SPARK_SSL_ENABLED=no
     volumes:
-      - ./src/processing/spark:/app/spark
-      - ./common:/app/common
-      - ./data:/app/data
+      - ./src/streaming:/opt/bitnami/spark/streaming
+      - ./utils:/opt/bitnami/spark/utils
+      - ./data:/opt/bitnami/spark/data
+      - ./config:/opt/bitnami/spark/conf
     depends_on:
       - spark-master
 
@@ -255,9 +250,10 @@ services:
       - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
       - SPARK_SSL_ENABLED=no
     volumes:
-      - ./src/processing/spark:/app/spark
-      - ./common:/app/common
-      - ./data:/app/data
+      - ./src/streaming:/opt/bitnami/spark/streaming
+      - ./utils:/opt/bitnami/spark/utils
+      - ./data:/opt/bitnami/spark/data
+      - ./config:/opt/bitnami/spark/conf
     depends_on:
       - spark-master
 
@@ -274,11 +270,11 @@ services:
       - PYTHONPATH=/opt/airflow
     volumes:
       - ./src/ingestion:/opt/airflow/ingestion
-      - ./common:/opt/airflow/common
+      - ./utils:/opt/airflow/utils
     depends_on:
       - kafka
       - schema-registry
-    command: python /opt/airflow/ingestion/api/realtime_ingest_service.py
+    command: python /opt/airflow/ingestion/api/streaming.py
 
   airflow-init:
     build:
@@ -307,8 +303,7 @@ services:
     volumes:
       - ./airflow/dags:/opt/airflow/dags
       - ./src/ingestion:/opt/airflow/ingestion
-      - ./src/processing:/opt/airflow/processing
-      - ./common:/opt/airflow/common
+      - ./utils:/opt/airflow/utils
       - ./data:/data 
       - ./logs:/opt/airflow/logs 
       - ./infrastructure/hive/conf/hive-site.xml:/opt/hive/conf/hive-site.xml 
@@ -332,8 +327,7 @@ services:
     volumes:
       - ./airflow/dags:/opt/airflow/dags
       - ./src/ingestion:/opt/airflow/ingestion
-      - ./src/processing:/opt/airflow/processing
-      - ./common:/opt/airflow/common
+      - ./utils:/opt/airflow/utils
       - ./data:/data 
       - ./logs:/opt/airflow/logs 
       - ./infrastructure/hive/conf/hive-site.xml:/opt/hive/conf/hive-site.xml 

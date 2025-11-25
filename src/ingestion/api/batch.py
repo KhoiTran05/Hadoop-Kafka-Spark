@@ -1,27 +1,17 @@
-from common.utils.logger_config import logger
-from common.utils.api_rate_limiter import RateLimiter
-from common.utils.api_key_getter import get_api_key
-from common.utils.data_validation import validate_data
+from utils.logger_config import logger
+from utils.api_key import get_api_key
+from utils.api_data_validation import validate_data
 from datetime import datetime, timedelta
 import requests
 
-APIS = {
-    "football": {
-        "url": 'https://api.football-data.org/v4/competitions/PL/matches',
-        "headers" : "X-Auth-Token",
-        "rate_limit": 10
-    }
-}
 
 def get_historical_football_data(days_ago=30):
+    """Ingest football historical data from Football Data API"""
     logger.info("Fetching 30 days historical football data ...")
     
-    # rate_limiter = RateLimiter(APIS.get("football").get("rate_limit"))
-    # rate_limiter.wait_if_needed()
-    
-    url = APIS.get("football").get("url")
+    url = "https://api.football-data.org/v4/competitions/PL/matches"
     headers = {
-        APIS.get("football").get("headers"): get_api_key("football")
+        "X-Auth-Token": get_api_key("football")
     }
     
     date_from = str((datetime.now() - timedelta(days=days_ago)).date()) 
@@ -43,9 +33,10 @@ def get_historical_football_data(days_ago=30):
         
         logger.info(f"AIRFLOW BATCH: Successfully fetched {len(historical_matches)} historical matches.")
         for match in historical_matches:
-            match['fetched_timestamp'] = fetch_timestamp
+            match['ingested_at'] = fetch_timestamp
         
-        validate_data('live_football', historical_matches,  {"id", "utcDate", "homeTeam", "awayTeam", "score", "fetched_timestamp"})
+        if historical_matches:
+            validate_data('historical_football', historical_matches,  {"id", "utcDate", "homeTeam", "awayTeam", "score", "ingested_at"})
         return historical_matches
     
     except requests.RequestException as e:

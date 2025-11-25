@@ -1,5 +1,5 @@
 from datetime import datetime
-from common.utils.logger_config import logger
+from utils.logger_config import logger
 
 # Data validation
 def validate_data(data_name, data, required_fields):

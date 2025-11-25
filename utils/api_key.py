@@ -1,4 +1,4 @@
-from common.utils.logger_config import logger
+from utils.logger_config import logger
 import os
 
 # from dotenv import load_dotenv

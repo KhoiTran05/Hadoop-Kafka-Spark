@@ -1,4 +1,4 @@
-from common.utils.logger_config import logger
+from utils.logger_config import logger
 import time
 
 class RateLimiter:

@@ -1,8 +1,14 @@
 .env
 logs
+
 apache-hive-2.3.2-bin.tar.gz
 hadoop-3.3.6.tar.gz
 spark-3.5.0-bin-hadoop3.tgz
+
 /data/
+
 **/__pycache__
 *.pyc
+
+config/*
+!config/spark-defaults.conf
