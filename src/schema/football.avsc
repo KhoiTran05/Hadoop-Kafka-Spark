@@ -1,0 +1,169 @@
+{
+  "type": "record",
+  "name": "FootballRecord",
+  "namespace": "com.data.pipeline",
+  "fields": [
+    {
+      "name": "area",
+      "type": {
+        "type": "record",
+        "name": "Area",
+        "fields": [
+          { "name": "id", "type": ["null", "long"], "default": null },
+          { "name": "name", "type": ["null", "string"], "default": null },
+          { "name": "code", "type": ["null", "string"], "default": null },
+          { "name": "flag", "type": ["null", "string"], "default": null }
+        ]
+      }
+    },
+    {
+      "name": "competition",
+      "type": {
+        "type": "record",
+        "name": "Competition",
+        "fields": [
+          { "name": "id", "type": ["null", "long"], "default": null },
+          { "name": "name", "type": ["null", "string"], "default": null },
+          { "name": "code", "type": ["null", "string"], "default": null },
+          { "name": "type", "type": ["null", "string"], "default": null },
+          { "name": "emblem", "type": ["null", "string"], "default": null }
+        ]
+      }
+    },
+    {
+      "name": "season",
+      "type": {
+        "type": "record",
+        "name": "Season",
+        "fields": [
+          { "name": "id", "type": ["null", "long"], "default": null },
+          { "name": "startDate", "type": ["null", "string"], "default": null },
+          { "name": "endDate", "type": ["null", "string"], "default": null },
+          { "name": "currentMatchday", "type": ["null", "int"], "default": null },
+          { "name": "winner", "type": ["null", "string"], "default": null }
+        ]
+      }
+    },
+    { "name": "id", "type": ["null", "long"], "default": null },
+    { "name": "utcDate", "type": ["null", "string"], "default": null },
+    { "name": "status", "type": ["null", "string"], "default": null },
+    { "name": "matchday", "type": ["null", "int"], "default": null },
+    { "name": "stage", "type": ["null", "string"], "default": null },
+    { "name": "group", "type": ["null", "string"], "default": null },
+    { "name": "lastUpdated", "type": ["null", "string"], "default": null },
+    {
+      "name": "homeTeam",
+      "type": {
+        "type": "record",
+        "name": "Team",
+        "fields": [
+          { "name": "id", "type": ["null", "long"], "default": null },
+          { "name": "name", "type": ["null", "string"], "default": null },
+          { "name": "shortName", "type": ["null", "string"], "default": null },
+          { "name": "tla", "type": ["null", "string"], "default": null },
+          { "name": "crest", "type": ["null", "string"], "default": null }
+        ]
+      }
+    },
+    {
+      "name": "awayTeam",
+      "type": "Team"
+    },
+    {
+      "name": "score",
+      "type": {
+        "type": "record",
+        "name": "Score",
+        "fields": [
+          { "name": "winner", "type": ["null", "string"], "default": null },
+          { "name": "duration", "type": ["null", "string"], "default": null },
+          {
+            "name": "fullTime",
+            "type": {
+              "type": "record",
+              "name": "FullTime",
+              "fields": [
+                { "name": "home", "type": ["null", "int"], "default": null },
+                { "name": "away", "type": ["null", "int"], "default": null }
+              ]
+            }
+          },
+          {
+            "name": "halfTime",
+            "type": {
+              "type": "record",
+              "name": "HalfTime",
+              "fields": [
+                { "name": "home", "type": ["null", "int"], "default": null },
+                { "name": "away", "type": ["null", "int"], "default": null }
+              ]
+            }
+          },
+          {
+            "name": "regularTime",
+            "type": ["null", {
+              "type": "record",
+              "name": "RegularTime",
+              "fields": [
+                { "name": "home", "type": ["null", "int"], "default": null },
+                { "name": "away", "type": ["null", "int"], "default": null }
+              ]
+            }],
+            "default": null
+          },
+          {
+            "name": "extraTime",
+            "type": ["null", {
+              "type": "record",
+              "name": "ExtraTime",
+              "fields": [
+                { "name": "home", "type": ["null", "int"], "default": null },
+                { "name": "away", "type": ["null", "int"], "default": null }
+              ]
+            }],
+            "default": null
+          },
+          {
+            "name": "penalties",
+            "type": ["null", {
+              "type": "record",
+              "name": "Penalties",
+              "fields": [
+                { "name": "home", "type": ["null", "int"], "default": null },
+                { "name": "away", "type": ["null", "int"], "default": null }
+              ]
+            }],
+            "default": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "odds",
+      "type": {
+        "type": "record",
+        "name": "Odds",
+        "fields": [
+          { "name": "msg", "type": ["null", "string"], "default": null }
+        ]
+      }
+    },
+    {
+      "name": "referees",
+      "type": {
+        "type": "array",
+        "items": {
+          "type": "record",
+          "name": "Referee",
+          "fields": [
+            { "name": "id", "type": ["null", "long"], "default": null },
+            { "name": "name", "type": ["null", "string"], "default": null },
+            { "name": "type", "type": ["null", "string"], "default": null },
+            { "name": "nationality", "type": ["null", "string"], "default": null }
+          ]
+        }
+      }
+    },
+    { "name": "ingested_at", "type": "string" }
+  ]
+}

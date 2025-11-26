@@ -201,6 +201,7 @@ services:
       - "7077:7077"
     volumes:
       - ./src/streaming:/opt/bitnami/spark/streaming
+      - ./src/schema:/opt/bitnami/spark/schema
       - ./utils:/opt/bitnami/spark/utils
       - ./data:/opt/bitnami/spark/data
       - ./config:/opt/bitnami/spark/conf
@@ -265,11 +266,13 @@ services:
     container_name: realtime-producer
     environment:
       - KAFKA_BROKER_URL=kafka:29092 
+      - SCHEMA_REGISTRY_URL=http://schema-registry:8081
       - OPENWEATHER_API_KEY=${OPENWEATHER_API_KEY}
       - FOOTBALL_DATA_API_KEY=${FOOTBALL_DATA_API_KEY}
       - PYTHONPATH=/opt/airflow
     volumes:
       - ./src/ingestion:/opt/airflow/ingestion
+      - ./src/schema:/opt/airflow/schema
       - ./utils:/opt/airflow/utils
     depends_on:
       - kafka

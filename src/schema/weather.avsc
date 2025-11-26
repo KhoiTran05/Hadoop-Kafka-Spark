@@ -1,0 +1,18 @@
+{
+    "type": "record",
+    "name": "WeatherRecord",
+    "namespace": "com.data.pipeline",
+    "fields": [
+        {"name": "id", "type": ["null", "long"], "default": null},
+        {"name": "city", "type": ["null", "string"], "default": null},
+        {"name": "country", "type": ["null", "string"], "default": null},
+        {"name": "weather_main", "type": ["null", "string"], "default": null},
+        {"name": "weather_description", "type": ["null", "string"], "default": null},
+        {"name": "temperature", "type": ["null", "float"], "default": null},
+        {"name": "pressure", "type": ["null", "long"], "default": null},
+        {"name": "humidity", "type": ["null", "long"], "default": null},
+        {"name": "visibility", "type": ["null", "long"], "default": null},
+        {"name": "wind_speed", "type": ["null", "float"], "default": null},
+        {"name": "ingested_at", "type": "string"}
+    ]
+}
