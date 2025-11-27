@@ -1,7 +1,7 @@
 # Hadoop Ecosystem Real Data Pipeline
 
 ## Project Description
-This project implements a big data pipeline designed to handle both real-time streaming and batch processing requirements for financial and weather data. The core of the system is Apache Kafka, serving as the central nervous system (Event Bus) that decouples data ingestion from processing.
+This project implements a big data pipeline designed to handle both real-time streaming and batch processing requirements for football and weather data. The core of the system is Apache Kafka, serving as the central nervous system (Event Bus) that decouples data ingestion from processing.
 
 The solution integrates HDFS, Hive, Spark (Streaming & Batch), Kafka, and Airflow to create a robust platform for:
 
