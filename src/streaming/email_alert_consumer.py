@@ -5,65 +5,71 @@ from email.mime.multipart import MIMEMultipart
 from kafka import KafkaConsumer
 from datetime import datetime
 from utils.logger_config import logger
-import logging
+import redis
 import os
 from typing import Dict, Any
 
-# Cấu hình email (có thể đặt trong file .env hoặc biến môi trường)
 EMAIL_CONFIG = {
-    'smtp_server': os.getenv('SMTP_SERVER', 'smtp.gmail.com'),
-    'smtp_port': int(os.getenv('SMTP_PORT', '587')),
-    'sender_email': os.getenv('SENDER_EMAIL', 'your-email@gmail.com'),
-    'sender_password': os.getenv('SENDER_PASSWORD', 'your-app-password'),
-    'recipient_emails': os.getenv('RECIPIENT_EMAILS', 'admin@company.com').split(',')
+    'smtp_server': os.getenv('SMTP_SERVER'),
+    'smtp_port': int(os.getenv('SMTP_PORT')),
+    'sender_email': os.getenv('SENDER_EMAIL'),
+    'sender_password': os.getenv('SENDER_PASSWORD'),
+    'recipient_emails': os.getenv('RECIPIENT_EMAILS').split(',')
 }
 
-# Cấu hình Kafka Consumer để lắng nghe topic sensor-alerts
 consumer = KafkaConsumer(
-    'sensor-alerts',
+    'weather-alert',
     bootstrap_servers=['localhost:9092'],
     group_id='email-alert-group',
-    auto_offset_reset='latest',  # Chỉ lắng nghe các tin nhắn mới
+    auto_offset_reset='latest', 
     value_deserializer=lambda x: json.loads(x.decode('utf-8'))
 )
 
+redis_server = redis.Redis(host='localhost', port=6379) 
+
 class EmailAlertSender:
-    """Class để gửi email cảnh báo"""
-    
     def __init__(self, config: Dict[str, Any]):
         self.config = config
         self.smtp_server = None
         
     def connect_smtp(self):
-        """Kết nối đến SMTP server"""
+        """Connect to SMTP server"""
         try:
             self.smtp_server = smtplib.SMTP(self.config['smtp_server'], self.config['smtp_port'])
             self.smtp_server.starttls()
             self.smtp_server.login(self.config['sender_email'], self.config['sender_password'])
-            logger.info("Đã kết nối thành công đến SMTP server")
+            logger.info("Successfully connected to the SMTP server")
             return True
         except Exception as e:
-            logger.error(f"Lỗi kết nối SMTP: {e}")
+            logger.error(f"SMTP connection error: {e}")
             return False
     
     def disconnect_smtp(self):
-        """Ngắt kết nối SMTP"""
+        """Disconnect from SMTP server"""
         if self.smtp_server:
             try:
                 self.smtp_server.quit()
-                logger.info("Đã ngắt kết nối SMTP")
+                logger.info("SMTP disconnected")
             except Exception as e:
-                logger.error(f"Lỗi ngắt kết nối SMTP: {e}")
+                logger.error(f"SMTP disconnection Error: {e}")
     
     def create_email_content(self, alert_data: Dict[str, Any]) -> tuple:
+        """
+        Create subject and HTML body for weather alert email
+        Args:
+            alert_data (Dict[str, Any]): Enriched parsed weather alert message consumed from Kafka
+
+        Returns:
+            tuple: (subject, HTML content)
+        """
         city = alert_data.get('city', 'Unknown')
         country = alert_data.get('country', '')
         timestamp = alert_data.get('timestamp', '') 
         alert_type = alert_data.get('alert_type', 'UNKNOWN') 
 
         title_map = {
-            "threshold": "WARNING: Exceeding Safety Limits",
-            "change": "WARNING: Unusual Volatility"
+            "threshold": "WEATHER WARNING: Exceeding Safety Limits",
+            "change": "WEATHER WARNING: Unusual Volatility"
         }
         email_subject = f"{title_map.get(alert_type, 'ALERT')}: {city}"
         
@@ -128,7 +134,14 @@ class EmailAlertSender:
 
     
     def send_email(self, alert_data: Dict[str, Any]) -> bool:
-        """Gửi email cảnh báo"""
+        """
+        Sending weather alert email
+        Args:
+            alert_data (Dict[str, Any]): Parsed weather alert message consumed from Kafka
+
+        Returns:
+            bool: True if the email was sent successfully, otherwise False.
+        """
         try:
             alert_type = alert_data.get("alert_type")
             data = {
@@ -171,19 +184,19 @@ class EmailAlertSender:
                     })
                     
             elif alert_type == "change":
-                temp_anomaly = alert_data["temp_change_anomaly"]
-                wind_anomaly = alert_data["wind_change_anomaly"]
-                press_anomaly = alert_data["pressure_change_anomaly"]
-                humid_anomaly = alert_data["humidity_change_anomaly"]
-                vis_anomaly = alert_data["visibility_change_anomaly"]
+                temp_anomaly = alert_data.get("temp_change_anomaly")
+                wind_anomaly = alert_data.get("wind_change_anomaly")
+                press_anomaly = alert_data.get("pressure_change_anomaly")
+                humid_anomaly = alert_data.get("humidity_change_anomaly")
+                vis_anomaly = alert_data.get("visibility_change_anomaly")
                 
                 if temp_anomaly:
                     if temp_anomaly == "rise rapidly":
                         value, timestamp, message = (alert_data.get("max_temp"), alert_data.get("max_temp_time"), 
-                                                        f"Sudden increase of {alert_data.get("temp_rise")}°C in the last 30 minutes")
+                                                        f"Sudden increase of {alert_data.get('temp_rise')}°C in the last 30 minutes")
                     else:
                         value, timestamp, message = (alert_data.get("min_temp"), alert_data.get("min_temp_time"), 
-                                                        f"Sudden decrease of {alert_data.get("temp_fall")}°C in the last 30 minutes")
+                                                        f"Sudden decrease of {alert_data.get('temp_fall')}°C in the last 30 minutes")
                     
                     data["anomalies"].append({
                         "metric": "Temperature fluctuation",
@@ -193,7 +206,7 @@ class EmailAlertSender:
                     })
                 if wind_anomaly:
                     value, timestamp, message = (alert_data.get("max_wind"), alert_data.get("max_wind_time"), 
-                                                    f"Sudden increase of {alert_data.get("wind_rise")}m/s in the last 30 minutes")
+                                                    f"Sudden increase of {alert_data.get('wind_rise')}m/s in the last 30 minutes")
                     
                     data["anomalies"].append({
                         "metric": "Wind speed fluctuation",
@@ -203,7 +216,7 @@ class EmailAlertSender:
                     })
                 if press_anomaly:
                     value, timestamp, message = (alert_data.get("min_pressure"), alert_data.get("min_pressure_time"), 
-                                                    f"Sudden drop of {alert_data.get("pressure_drop")}hPa in the last 30 minutes")
+                                                    f"Sudden drop of {alert_data.get('pressure_drop')}hPa in the last 30 minutes")
                     
                     data["anomalies"].append({
                         "metric": "Pressure fluctuation",
@@ -213,7 +226,7 @@ class EmailAlertSender:
                     })
                 if humid_anomaly:
                     value, timestamp, message = (alert_data.get("max_humidity"), alert_data.get("max_humid_time"), 
-                                                    f"Sudden increase of {alert_data.get("humidity_rise")}% in the last 30 minutes")
+                                                    f"Sudden increase of {alert_data.get('humidity_rise')}% in the last 30 minutes")
                     
                     data["anomalies"].append({
                         "metric": "Humidity fluctuation",
@@ -232,105 +245,138 @@ class EmailAlertSender:
                         "message": message
                     })
             
-            subject, html_content, text_content = self.create_email_content(alert_data)
+            subject, html_content = self.create_email_content(data)
             
-            # Tạo message
             msg = MIMEMultipart('alternative')
             msg['Subject'] = subject
             msg['From'] = self.config['sender_email']
             msg['To'] = ', '.join(self.config['recipient_emails'])
             
-            # Thêm nội dung text và HTML
-            text_part = MIMEText(text_content, 'plain', 'utf-8')
             html_part = MIMEText(html_content, 'html', 'utf-8')
-            
-            msg.attach(text_part)
             msg.attach(html_part)
             
-            # Gửi email
             if not self.smtp_server:
                 if not self.connect_smtp():
                     return False
             
             self.smtp_server.send_message(msg)
-            logger.info(f"Đã gửi email cảnh báo cho thiết bị {alert_data['device_id']} "
-                       f"đến {len(self.config['recipient_emails'])} người nhận")
+            logger.info(f"Alert email sent for {alert_data['city']},{alert_data['country']} "
+                       f"to {len(self.config['recipient_emails'])} recipient")
             return True
             
         except Exception as e:
-            logger.error(f"Lỗi gửi email: {e}")
+            logger.error(f"Failed to send email: {e}")
             return False
 
 def validate_email_config(config: Dict[str, Any]) -> bool:
-    """Kiểm tra cấu hình email"""
+    """Validate email config"""
     required_fields = ['smtp_server', 'smtp_port', 'sender_email', 'sender_password']
     for field in required_fields:
         if not config.get(field):
-            logger.error(f"Thiếu cấu hình email: {field}")
+            logger.error(f"Email configuration missing: {field}")
             return False
     
     if not config.get('recipient_emails'):
-        logger.error("Thiếu danh sách email người nhận")
+        logger.error("Missing recipient email list")
         return False
     
     return True
 
+def send_email_deduplicated(email_sender, alert_data, ano_list, alert_type, offset, redis_retention=1800):
+    """
+    Handle email deduplication before sending a weather alert.
+    Args:
+        email_sender (EmailAlertSender): Service responsible for sending alert emails
+        alert_data (dict): Parsed weather alert message consumed from Kafka
+        ano_list (tuple): Detected anomalies
+        alert_type (string): Type of weather alert, either 'threshold' or 'change'
+        offset (int): Kafka topic message offset
+        redis_retention (int, optional): Time (in seconds) to keep deduplication keys in Redis. Defaults to 1800
+    
+    Returns:
+        None
+    """
+    if not redis_server:
+        logger.info("Unable to connect to Redis")
+        return
+    
+    logger.info(f"Start email #{offset} deduplication process")
+    alert_type = alert_data["alert_type"]
+    city = alert_data["city"]
+    
+    anomalies = [anomaly for anomaly in ano_list if alert_data.get(anomaly)]
+    
+    for email in EMAIL_CONFIG['recipient_emails']:
+        for anomaly in anomalies:
+            dedup_key = f"alert_sent:{city}:{alert_type}:{anomaly}"
+            
+            if redis_server.exists(dedup_key):
+                logger.info(f"Skipping duplicate alert for {email}:{city}:{alert_type}:{anomaly}")
+                continue
+            
+            try:
+                logger.info(f"Sending email #{offset} after deduplication process")
+                success = email_sender.send_email(alert_data)
+
+                if success:
+                    logger.info(f"Alert email #{offset} sent successfully")
+                else:
+                    logger.info(f"Failed to sent  alert email #{offset}")
+                    email_sender.disconnect_smtp()
+                    if email_sender.connect_smtp():
+                        logger.info("Reconnected to SMTP server")
+                
+                redis_server.setex(dedup_key, redis_retention, "1")
+                
+            except Exception as e:
+                logger.error(f"Error sending deduplicated email: {e}")
+
 def main():
-    """Hàm chính để chạy email alert consumer"""
-    print("🚀 Bắt đầu Email Alert Consumer...")
-    print("📧 Đang lắng nghe các cảnh báo từ topic 'sensor-alerts'...")
+    logger.info("Starting email alert service ...")
     
-    # Kiểm tra cấu hình email
     if not validate_email_config(EMAIL_CONFIG):
-        print("❌ Cấu hình email không hợp lệ!")
-        print("\nVui lòng cấu hình các biến môi trường sau:")
-        print("- SMTP_SERVER (mặc định: smtp.gmail.com)")
-        print("- SMTP_PORT (mặc định: 587)")
-        print("- SENDER_EMAIL (email người gửi)")
-        print("- SENDER_PASSWORD (mật khẩu ứng dụng)")
-        print("- RECIPIENT_EMAILS (danh sách email người nhận, cách nhau bởi dấu phẩy)")
+        logger.info("Invalid email configuration")
         return
     
-    # Tạo email sender
     email_sender = EmailAlertSender(EMAIL_CONFIG)
-    
-    # Kết nối SMTP ban đầu
     if not email_sender.connect_smtp():
-        print("❌ Không thể kết nối đến SMTP server!")
+        logger.info("Unable to connect to SMTP server")
         return
     
-    print(f"✅ Đã cấu hình gửi email từ: {EMAIL_CONFIG['sender_email']}")
-    print(f"📬 Người nhận: {', '.join(EMAIL_CONFIG['recipient_emails'])}")
+    logger.info(f"Email sending from: {EMAIL_CONFIG['sender_email']}")
+    logger.info(f"Recipient: {', '.join(EMAIL_CONFIG['recipient_emails'])}")
     
     try:
-        alert_count = 0
         
         for message in consumer:
             alert_data = message.value
-            alert_count += 1
+            offset = message.offset
             
-            logger.info(f"📨 Nhận được cảnh báo #{alert_count} từ thiết bị {alert_data['device_id']}")
+            logger.info(f"Alert email offset {offset} received")
             
-            # Gửi email
-            success = email_sender.send_email(alert_data)
+            alert_type = alert_data["alert_type"]
             
-            if success:
-                print(f"✅ Đã gửi email cảnh báo #{alert_count} thành công!")
-            else:
-                print(f"❌ Lỗi gửi email cảnh báo #{alert_count}")
-                # Thử kết nối lại SMTP
-                email_sender.disconnect_smtp()
-                if email_sender.connect_smtp():
-                    logger.info("Đã kết nối lại SMTP server")
+            # Email dedup
+            if alert_type == "threshold":
+                ano_list = ("temp_anomaly", "pressure_anomaly", 
+                                "visibility_anomaly", "wind_anomaly")
+                send_email_deduplicated(email_sender, alert_data, ano_list, alert_type, offset)
+                
+            elif alert_type == "change":
+                ano_list = ("temp_change_anomaly", "wind_change_anomaly", 
+                                "pressure_change_anomaly", "humidity_change_anomaly", "visibility_change_anomaly")
+                send_email_deduplicated(email_sender, alert_data, ano_list, alert_type, offset)
     
     except KeyboardInterrupt:
-        print("\n🛑 Dừng Email Alert Consumer...")
+        logger.info("\nStop Email Alert Consumer...")
     except Exception as e:
-        logger.error(f"Lỗi không mong đợi: {e}")
+        import traceback
+        logger.error(f"Error processing message: {e}")
+        logger.error(traceback.format_exc())
     finally:
         email_sender.disconnect_smtp()
         consumer.close()
-        print("👋 Đã đóng kết nối")
+        logger.info("Connection closed")
 
 if __name__ == "__main__":
     main()

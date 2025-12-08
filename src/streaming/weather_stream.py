@@ -1,6 +1,5 @@
 import sys
 import os
-import redis
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'utils'))
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import *
@@ -88,7 +87,10 @@ class WeatherStreamProcessor:
             logger.info(f"Start writing stream to '{topic}' topic ...")
             
             query = df \
-                .selectExpr("to_json(struct(*)) AS value") \
+                .selectExpr(
+                    "CAST(NULL AS STRING) AS key",
+                    "CAST(to_json(struct(*)) AS STRING) AS value"
+                ) \
                 .writeStream \
                 .format("kafka") \
                 .option("kafka.bootstrap.servers", "localhost:9092") \
@@ -96,7 +98,7 @@ class WeatherStreamProcessor:
                 .option("checkpointLocation", f"./checkpoints/weather/{checkpoint_location}") \
                 .start()
                 
-            query.awaitTermination()
+            return query
             
         except Exception as e:
             logger.error(f"Failed to write to '{topic}' topic")
@@ -196,7 +198,7 @@ class WeatherStreamProcessor:
             .withColumn("humidity_change_anomaly", when(col("avg_humidity") == 0, None)
                                         .when((col("humidity_rise") / col("avg_humidity")) >= 0.2, "rise rapidly")
                                         .otherwise(None)) \
-            .withColumn("visibility_change_anomaly", when((col("avg_vis") > 5000) & (col("min_vis") < 2000), "drop/unstable")
+            .withColumn("visibility_change_anomaly", when((col("avg_vis") > 5000) & (col("min_vis_info.visibility") < 2000), "drop/unstable")
                                             .otherwise(None))
             
         filtered = anomaly.filter(
@@ -252,10 +254,12 @@ class WeatherStreamProcessor:
         df_raw = self.read_kafka_stream(topic, schema)
         
         threshold_detect_df = self.threshold_based_anomaly_detect(df_raw)
-        self.write_to_alert_topic(threshold_detect_df, 'weather-alert', 'threshold_detect')
+        threshold_query = self.write_to_alert_topic(threshold_detect_df, 'weather-alert', 'threshold_detect')
         
         change_detect_df = self.change_anomaly_detect(df_raw)
-        self.write_to_alert_topic(change_detect_df, 'weather-alert', 'change_detect')
+        change_query = self.write_to_alert_topic(change_detect_df, 'weather-alert', 'change_detect')
+        
+        self.spark.streams.awaitAnyTermination()
 
 def main():
     processor = WeatherStreamProcessor()

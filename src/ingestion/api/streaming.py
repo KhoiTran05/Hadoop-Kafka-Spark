@@ -253,8 +253,6 @@ class DataIngestionPipeline:
     
     def run_ingestion(self):
         """Continuously fetch football and weather data and produce messages to Kafka topics on a schedule"""
-        time.sleep(60)
-        
         football_last_run = datetime.min.replace(tzinfo=timezone.utc)
         weather_last_run = datetime.min.replace(tzinfo=timezone.utc)
         
@@ -312,4 +310,5 @@ def main():
     
     
 if __name__ == '__main__':
+    time.sleep(60)
     main()
