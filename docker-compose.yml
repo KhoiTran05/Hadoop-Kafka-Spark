@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   zookeeper:
     image: confluentinc/cp-zookeeper:7.4.0
@@ -194,7 +192,9 @@ services:
 
   # SPARK
   spark-master:
-    image: bitnami/spark:3.5.0
+    build:
+        context: .
+        dockerfile: infrastructure/docker/Dockerfile.spark
     hostname: spark-master
     ports:
       - "8080:8080"
@@ -215,11 +215,15 @@ services:
       - namenode
 
   spark-worker1:
-    image: bitnami/spark:3.5.0
+    build:
+        context: .
+        dockerfile: infrastructure/docker/Dockerfile.spark
     hostname: spark-worker1
     ports:
       - "8082:8081"
     environment:
+      - KAFKA_BROKER_URL=kafka:29092 
+      - SCHEMA_REGISTRY_URL=http://schema-registry:8081
       - SPARK_MODE=worker
       - SPARK_MASTER_URL=spark://spark-master:7077
       - SPARK_WORKER_MEMORY=4G
@@ -237,11 +241,15 @@ services:
       - spark-master
 
   spark-worker2:
-    image: bitnami/spark:3.5.0
+    build:
+        context: .
+        dockerfile: infrastructure/docker/Dockerfile.spark
     hostname: spark-worker2
     ports:
       - "8084:8081"
     environment:
+      - KAFKA_BROKER_URL=kafka:29092 
+      - SCHEMA_REGISTRY_URL=http://schema-registry:8081
       - SPARK_MODE=worker
       - SPARK_MASTER_URL=spark://spark-master:7077
       - SPARK_WORKER_MEMORY=4G
@@ -257,6 +265,27 @@ services:
       - ./config:/opt/bitnami/spark/conf
     depends_on:
       - spark-master
+
+  spark-submit:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/Dockerfile.spark
+    depends_on:
+    - spark-master
+    - spark-worker1
+    - spark-worker2
+    environment:
+      - KAFKA_BROKER_URL=kafka:29092 
+      - SCHEMA_REGISTRY_URL=http://schema-registry:8081
+    volumes:
+      - ./src/streaming:/opt/bitnami/spark/streaming
+      - ./utils:/opt/bitnami/spark/utils
+      - ./data:/opt/bitnami/spark/data
+      - ./config:/opt/bitnami/spark/conf
+    command: >
+      spark-submit
+      --master spark://spark-master:7077
+      /opt/bitnami/spark/streaming/weather_stream.py
 
   realtime-producer:
     build:
@@ -278,6 +307,25 @@ services:
       - kafka
       - schema-registry
     command: python /opt/airflow/ingestion/api/streaming.py
+
+  email-alert-consumer:
+    build:
+      context: .
+      dockerfile: src/streaming/email-alert/Dockerfile
+    environment:
+      - KAFKA_BROKER_URL=kafka:29092 
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_DB=0
+      - SMTP_SERVER=${SMTP_SERVER}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SENDER_EMAIL=${SENDER_EMAIL}
+      - SENDER_PASSWORD=${SENDER_PASSWORD}
+      - RECIPIENT_EMAILS=${RECIPIENT_EMAILS}
+    depends_on:
+      - redis
+      - kafka
+    
 
   airflow-init:
     build:

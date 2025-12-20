@@ -1,58 +1,52 @@
-# from datetime import datetime, timedelta
-# from airflow import DAG
-# from airflow.operators.python import PythonOperator
-# from airflow.operators.bash import BashOperator
-# from airflow.operators.empty import EmptyOperator
-# from airflow.utils.dates import days_ago
+from datetime import datetime, timedelta
+from airflow import DAG
+from airflow.operators.python import PythonOperator
+from airflow.operators.bash import BashOperator
+from airflow.operators.empty import EmptyOperator
+from airflow.utils.dates import days_ago
         
-# #Dag default arguments
-# default_args={
-#     'owner': 'hadoop-team',
-#     'depends_on_past': False, # Kiểm tra Task tương ứng trong LẦN CHẠY TRƯỚC ĐÓ
-#     'start_date': days_ago(1),
-#     'email_on_failure': False, 
-#     'email_on_retry': False,
-#     'retries': 3, # 1 Task
-#     'retry_delay': timedelta(minutes=5),
-#     'execution_timeout': timedelta(hours=2)
-# }
+#Dag default arguments
+default_args={
+    'owner': 'hadoop-team',
+    'depends_on_past': False,
+    'start_date': days_ago(1),
+    'email_on_failure': False, 
+    'email_on_retry': False,
+    'retries': 3, # 1 Task
+    'retry_delay': timedelta(minutes=5),
+    'execution_timeout': timedelta(hours=2)
+}
 
-# #Create dag
-# dag = DAG(
-#     dag_id='comprehensive_data_pipeline',
-#     default_args=default_args,
-#     description='Complete data pipeline with Hadoop',
-#     schedule_interval=timedelta(hours=6),
-#     catchup=False,
-#     max_active_runs=1,
-#     tags = ['hadoop', 'hive', 'spark']
-# )
+#Create dag
+dag = DAG(
+    dag_id='comprehensive_data_pipeline',
+    default_args=default_args,
+    description='Complete data pipeline with Hadoop',
+    schedule_interval=timedelta(days=1),
+    catchup=False,
+    max_active_runs=1,
+    tags = ['hadoop', 'hive', 'spark', 'kafka']
+)
 
-# from ingestion.api.streaming import fetch_weather_data, fetch_stock_data, validate_data
+from ingestion.api.batch import get_historical_football_data, insert_postgres
 
-# #Task definitions
-# start_task = EmptyOperator(
-#     task_id='start_pipeline',
-#     dag=dag
-# )
+#Task definitions
+start_task = EmptyOperator(
+    task_id='start_pipeline',
+    dag=dag
+)
 
-# ingest_weather_task = PythonOperator(
-#     task_id='ingest_weather_data',
-#     python_callable=fetch_weather_data,
-#     dag=dag
-# )
+ingest_historical_football_task = PythonOperator(
+    task_id='ingest_football_data',
+    python_callable=get_historical_football_data,
+    dag=dag
+)
 
-# ingest_stock_task = PythonOperator(
-#     task_id='ingest_stock_data',
-#     python_callable=fetch_stock_data,
-#     dag=dag
-# )
-
-# validate_data_task = PythonOperator(
-#     task_id='validate_data_quality',
-#     python_callable=validate_data,
-#     dag=dag
-# )
+insert_postgres_task = PythonOperator(
+    task_id='insert_football_postgres',
+    python_callable=insert_postgres,
+    dag=dag
+)
 
 # HDFS_LOADER_SCRIPT = '/opt/airflow/ingestion/scripts/load_to_hdfs.sh'
 
@@ -98,12 +92,4 @@
 #     """
 # )
 
-# start_task >> [ingest_weather_task, ingest_stock_task]
-
-# [ingest_weather_task, ingest_stock_task] >> validate_data_task
-
-# validate_data_task >> upload_to_hdfs_task
-
-# upload_to_hdfs_task >> create_hive_raw_tables_task
-
-# create_hive_raw_tables_task >> msc_repair_task
+start_task >> ingest_historical_football_task >> insert_postgres_task

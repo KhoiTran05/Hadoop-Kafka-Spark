@@ -1,6 +1,5 @@
 import sys
 import os
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'utils'))
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import *
 from pyspark.sql.avro.functions import from_avro
@@ -10,20 +9,16 @@ import requests
 class WeatherStreamProcessor:
     def __init__(self):
         self.spark = self.create_spark_session()
-        #os.getenv("KAFKA_BROKER_URL")
-        self.kafka_servers = 'localhost:9092'
+        self.kafka_servers = os.getenv("KAFKA_BROKER_URL")
         
     def create_spark_session(self):
-        # .config("spark.sql.streaming.checkpointLocation", "hdfs://namenode:9000/checkpoints/weather")
         return SparkSession.builder \
-            .appName("LiveMatchesStreamProcessor") \
-            .master("local[*]") \
-            .config("spark.jars.packages", "org.apache.spark:spark-avro_2.12:3.5.5,org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.5") \
+            .appName("WeatherStreamProcessor") \
+            .config("spark.sql.streaming.checkpointLocation", "hdfs://namenode:9000/checkpoints/weather") \
             .getOrCreate()
             
     def get_schema(self, topic):
-        # os.getenv("SCHEMA_REGISTRY_URL")
-        schema_registry = 'http://localhost:8081'
+        schema_registry = os.getenv("SCHEMA_REGISTRY_URL")
         try:
             response = requests.get(
                 f"{schema_registry}/subjects/{topic}-value/versions/latest/schema"
@@ -69,7 +64,7 @@ class WeatherStreamProcessor:
                 .outputMode(output_mode) \
                 .format("console") \
                 .option("truncate", False) \
-                .option("checkpointLocation", f"./checkpoints/weather/{checkpoint_location}") \
+                .option("checkpointLocation", f"hdfs://namenode:9000/checkpoints/weather/{checkpoint_location}") \
                 .start()
                 
             query.awaitTermination()
@@ -93,9 +88,9 @@ class WeatherStreamProcessor:
                 ) \
                 .writeStream \
                 .format("kafka") \
-                .option("kafka.bootstrap.servers", "localhost:9092") \
+                .option("kafka.bootstrap.servers", self.kafka_servers) \
                 .option("topic", topic) \
-                .option("checkpointLocation", f"./checkpoints/weather/{checkpoint_location}") \
+                .option("checkpointLocation", f"hdfs://namenode:9000/checkpoints/weather/{checkpoint_location}") \
                 .start()
                 
             return query

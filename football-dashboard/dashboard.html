@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Football Live Dashboard</title>
+    <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+
+        .section {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .section-header {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #4CAF50;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-header.live {
+            border-bottom-color: #e74c3c;
+        }
+
+        .section-header.upcoming {
+            border-bottom-color: #3498db;
+        }
+
+        .live-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            background: #e74c3c;
+            border-radius: 50%;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        .match-row {
+            display: grid;
+            grid-template-columns: 150px 1fr auto 1fr 150px;
+            align-items: center;
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            gap: 15px;
+        }
+
+        .match-row:last-child {
+            border-bottom: none;
+        }
+
+        .match-row:hover {
+            background: #f9f9f9;
+        }
+
+        .match-time {
+            font-size: 0.9em;
+            color: #666;
+            text-align: center;
+        }
+
+        .team {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .team.home {
+            justify-content: flex-end;
+        }
+
+        .team-logo {
+            width: 30px;
+            height: 30px;
+            object-fit: contain;
+        }
+
+        .team-name {
+            font-weight: 500;
+            color: #333;
+        }
+
+        .score-box {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2em;
+            font-weight: bold;
+            min-width: 80px;
+        }
+
+        .score {
+            background: #f0f0f0;
+            padding: 5px 15px;
+            border-radius: 4px;
+            min-width: 40px;
+            text-align: center;
+        }
+
+        .score.live {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .vs {
+            color: #999;
+            font-size: 0.8em;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.75em;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .status-live {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .status-finished {
+            background: #95a5a6;
+            color: white;
+        }
+
+        .status-upcoming {
+            background: #3498db;
+            color: white;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #999;
+            padding: 40px;
+            font-style: italic;
+        }
+
+        .connection-status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: bold;
+            background: #2ecc71;
+            color: white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            z-index: 1000;
+        }
+
+        .connection-status.disconnected {
+            background: #e74c3c;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        /* Pagination Styles */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+
+        .pagination button {
+            padding: 8px 16px;
+            border: 1px solid #ddd;
+            background: white;
+            color: #333;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .pagination button:hover:not(:disabled) {
+            background: #f0f0f0;
+            border-color: #999;
+        }
+
+        .pagination button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .pagination button.active {
+            background: #4CAF50;
+            color: white;
+            border-color: #4CAF50;
+        }
+
+        .pagination .page-info {
+            color: #666;
+            font-size: 0.9em;
+            margin: 0 10px;
+        }
+
+        .per-page-selector {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .per-page-selector select {
+            padding: 6px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: white;
+            cursor: pointer;
+        }
+
+        .match-count {
+            font-size: 0.85em;
+            color: #999;
+            font-weight: normal;
+        }
+    </style>
+</head>
+<body>
+    <div class="connection-status" id="connectionStatus">● Connected</div>
+    
+    <div class="container">
+        <div class="title">
+            <img src="https://crests.football-data.org/PL.png" alt="PL logo" />
+            <h1>Season 25/26</h1>
+        </div>
+
+        <!-- Recent Matches (14 days) with Pagination -->
+        <div class="section">
+            <div class="section-header">
+                <div class="section-title">
+                    Recent Matches
+                    <span class="match-count" id="recentCount">(0 matches)</span>
+                </div>
+                <div class="per-page-selector">
+                    <label for="recentPerPage">Show:</label>
+                    <select id="recentPerPage">
+                        <option value="5" selected>5</option>
+                        <option value="10">10</option>
+                        <option value="20">20</option>
+                        <option value="50">50</option>
+                    </select>
+                </div>
+            </div>
+            <div id="recentMatches" class="loading">Loading recent matches...</div>
+            <div id="recentPagination" class="pagination" style="display: none;"></div>
+        </div>
+
+        <!-- Live Matches (No pagination needed - usually few matches) -->
+        <div class="section">
+            <div class="section-header live">
+                <div class="section-title">
+                    <span class="live-indicator"></span>
+                    Live Matches
+                    <span class="match-count" id="liveCount">(0 matches)</span>
+                </div>
+            </div>
+            <div id="liveMatches" class="loading">Loading live matches...</div>
+        </div>
+
+        <!-- Upcoming Matches with Pagination -->
+        <div class="section">
+            <div class="section-header upcoming">
+                <div class="section-title">
+                    Upcoming Matches
+                    <span class="match-count" id="upcomingCount">(0 matches)</span>
+                </div>
+                <div class="per-page-selector">
+                    <label for="upcomingPerPage">Show:</label>
+                    <select id="upcomingPerPage">
+                        <option value="5" selected>5</option>
+                        <option value="10">10</option>
+                        <option value="20">20</option>
+                        <option value="50">50</option>
+                    </select>
+            </div>
+            </div>
+            <div id="upcomingMatches" class="loading">Loading upcoming matches...</div>
+            <div id="upcomingPagination" class="pagination" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:3001';
+        let socket;
+
+        // Store all matches for pagination
+        let allRecentMatches = [];
+        let allUpcomingMatches = [];
+        let currentRecentPage = 1;
+        let currentUpcomingPage = 1;
+        let recentPerPage = 5;
+        let upcomingPerPage = 5;
+
+        // Format date/time
+        function formatDateTime(dateString) {
+            const date = new Date(dateString);
+            const today = new Date();
+            const tomorrow = new Date(today);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+
+            const dateStr = date.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' });
+            const timeStr = date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+
+            if (date.toDateString() === today.toDateString()) {
+                return `Today, ${timeStr}`;
+            } else if (date.toDateString() === tomorrow.toDateString()) {
+                return `Tomorrow, ${timeStr}`;
+            }
+            return `${dateStr}, ${timeStr}`;
+        }
+
+        // Render match row
+        function renderMatch(match) {
+            const isLive = match.status === 'LIVE';
+            const isFinished = match.status === 'FINISHED';
+            
+            let scoreDisplay = '';
+            if (isLive || isFinished) {
+                const homeScore = match.fullTime?.home ?? match.home_score ?? '-';
+                const awayScore = match.fullTime?.away ?? match.away_score ?? '-';
+                
+                scoreDisplay = `
+                    <div class="score-box">
+                        <div class="score ${isLive ? 'live' : ''}">${homeScore}</div>
+                        <div class="score ${isLive ? 'live' : ''}">${awayScore}</div>
+                    </div>
+                `;
+            } else {
+                scoreDisplay = `<div class="score-box"><span class="vs">vs</span></div>`;
+            }
+
+            let statusBadge = '';
+            if (isLive) {
+                statusBadge = '<span class="status-badge status-live">● LIVE</span>';
+            } else if (isFinished) {
+                statusBadge = '<span class="status-badge status-finished">FT</span>';
+            }
+
+            return `
+                <div class="match-row" data-match-id="${match.id}">
+                    <div class="match-time">
+                        ${formatDateTime(match.event_timestamp)}
+                        ${statusBadge}
+                    </div>
+                    <div class="team home">
+                        <span class="team-name">${match.home_team_name}</span>
+                        <img src="${match.home_team_crest}" class="team-logo" alt="${match.home_team_name}" onerror="this.style.display='none'">
+                    </div>
+                    ${scoreDisplay}
+                    <div class="team away">
+                        <img src="${match.away_team_crest}" class="team-logo" alt="${match.away_team_name}" onerror="this.style.display='none'">
+                        <span class="team-name">${match.away_team_name}</span>
+                    </div>
+                    <div></div>
+                </div>
+            `;
+        }
+
+        // Render pagination
+        function renderPagination(containerId, currentPage, totalItems, perPage, onPageChange) {
+            const totalPages = Math.ceil(totalItems / perPage);
+            const container = document.getElementById(containerId);
+
+            if (totalPages <= 1) {
+                container.style.display = 'none';
+                return;
+            }
+
+            container.style.display = 'flex';
+
+            const startItem = (currentPage - 1) * perPage + 1;
+            const endItem = Math.min(currentPage * perPage, totalItems);
+
+            let html = `
+                <button ${currentPage === 1 ? 'disabled' : ''} onclick="${onPageChange}(${currentPage - 1})">
+                    ← Previous
+                </button>
+            `;
+
+            // Show page numbers
+            const maxPagesToShow = 5;
+            let startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
+            let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
+
+            if (endPage - startPage < maxPagesToShow - 1) {
+                startPage = Math.max(1, endPage - maxPagesToShow + 1);
+            }
+
+            if (startPage > 1) {
+                html += `<button onclick="${onPageChange}(1)">1</button>`;
+                if (startPage > 2) html += `<span style="padding: 0 5px;">...</span>`;
+            }
+
+            for (let i = startPage; i <= endPage; i++) {
+                html += `
+                    <button class="${i === currentPage ? 'active' : ''}" onclick="${onPageChange}(${i})">
+                        ${i}
+                    </button>
+                `;
+            }
+
+            if (endPage < totalPages) {
+                if (endPage < totalPages - 1) html += `<span style="padding: 0 5px;">...</span>`;
+                html += `<button onclick="${onPageChange}(${totalPages})">${totalPages}</button>`;
+            }
+
+            html += `
+                <button ${currentPage === totalPages ? 'disabled' : ''} onclick="${onPageChange}(${currentPage + 1})">
+                    Next →
+                </button>
+                <span class="page-info">${startItem}-${endItem} of ${totalItems}</span>
+            `;
+
+            container.innerHTML = html;
+        }
+
+        // Render paginated matches
+        function renderPaginatedMatches(containerId, matches, currentPage, perPage) {
+            const container = document.getElementById(containerId);
+            
+            if (matches.length === 0) {
+                container.innerHTML = '<div class="empty-state">No matches available</div>';
+                return;
+            }
+
+            const startIdx = (currentPage - 1) * perPage;
+            const endIdx = startIdx + perPage;
+            const pageMatches = matches.slice(startIdx, endIdx);
+
+            container.innerHTML = pageMatches.map(renderMatch).join('');
+        }
+
+        // Recent matches pagination
+        function goToRecentPage(page) {
+            currentRecentPage = page;
+            renderPaginatedMatches('recentMatches', allRecentMatches, currentRecentPage, recentPerPage);
+            renderPagination('recentPagination', currentRecentPage, allRecentMatches.length, recentPerPage, 'goToRecentPage');
+        }
+
+        // Upcoming matches pagination
+        function goToUpcomingPage(page) {
+            currentUpcomingPage = page;
+            renderPaginatedMatches('upcomingMatches', allUpcomingMatches, currentUpcomingPage, upcomingPerPage);
+            renderPagination('upcomingPagination', currentUpcomingPage, allUpcomingMatches.length, upcomingPerPage, 'goToUpcomingPage');
+        }
+
+        // Render matches list (non-paginated)
+        function renderMatches(containerId, matches) {
+            const container = document.getElementById(containerId);
+            if (matches.length === 0) {
+                container.innerHTML = '<div class="empty-state">No matches available</div>';
+            } else {
+                container.innerHTML = matches.map(renderMatch).join('');
+            }
+        }
+
+        // Update match counts
+        function updateMatchCounts() {
+            document.getElementById('recentCount').textContent = `(${allRecentMatches.length} matches)`;
+            document.getElementById('liveCount').textContent = `(${document.querySelectorAll('#liveMatches .match-row').length} matches)`;
+            document.getElementById('upcomingCount').textContent = `(${allUpcomingMatches.length} matches)`;
+        }
+
+        // Load initial data
+        async function loadInitialData() {
+            try {
+                const [recent, live, upcoming] = await Promise.all([
+                    fetch(`${API_URL}/api/matches/recent`).then(r => r.json()),
+                    fetch(`${API_URL}/api/matches/live`).then(r => r.json()),
+                    fetch(`${API_URL}/api/matches/upcoming`).then(r => r.json())
+                ]);
+
+                allRecentMatches = recent;
+                allUpcomingMatches = upcoming;
+
+                goToRecentPage(1);
+                renderMatches('liveMatches', live);
+                goToUpcomingPage(1);
+
+                updateMatchCounts();
+            } catch (error) {
+                console.error('Error loading data:', error);
+                document.getElementById('recentMatches').innerHTML = '<div class="empty-state">Error loading data</div>';
+                document.getElementById('liveMatches').innerHTML = '<div class="empty-state">Error loading data</div>';
+                document.getElementById('upcomingMatches').innerHTML = '<div class="empty-state">Error loading data</div>';
+            }
+        }
+
+        // Per-page change handlers
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('recentPerPage').addEventListener('change', (e) => {
+                recentPerPage = parseInt(e.target.value);
+                currentRecentPage = 1;
+                goToRecentPage(1);
+            });
+
+            document.getElementById('upcomingPerPage').addEventListener('change', (e) => {
+                upcomingPerPage = parseInt(e.target.value);
+                currentUpcomingPage = 1;
+                goToUpcomingPage(1);
+            });
+        });
+
+        // Connect to WebSocket
+        function connectWebSocket() {
+            socket = io(API_URL);
+
+            socket.on('connect', () => {
+                console.log('Connected to server');
+                document.getElementById('connectionStatus').textContent = '● Connected';
+                document.getElementById('connectionStatus').classList.remove('disconnected');
+            });
+
+            socket.on('disconnect', () => {
+                console.log('Disconnected from server');
+                document.getElementById('connectionStatus').textContent = '● Disconnected';
+                document.getElementById('connectionStatus').classList.add('disconnected');
+            });
+
+            socket.on('match:update', (match) => {
+                console.log('Match update:', match);
+                
+                // Remove match from all arrays
+                allRecentMatches = allRecentMatches.filter(m => m.id !== match.id);
+                allUpcomingMatches = allUpcomingMatches.filter(m => m.id !== match.id);
+                document.querySelectorAll(`[data-match-id="${match.id}"]`).forEach(el => el.remove());
+
+                // Add to appropriate section
+                if (match.status === 'LIVE') {
+                    const container = document.getElementById('liveMatches');
+                    const emptyState = container.querySelector('.empty-state');
+                    if (emptyState) container.innerHTML = '';
+                    container.insertAdjacentHTML('afterbegin', renderMatch(match));
+                } else if (match.status === 'FINISHED') {
+                    allRecentMatches.unshift(match);
+                    goToRecentPage(currentRecentPage);
+                } else if (match.status === 'TIMED') {
+                    allUpcomingMatches.push(match);
+                    goToUpcomingPage(currentUpcomingPage);
+                }
+
+                updateMatchCounts();
+            });
+        }
+
+        // Initialize
+        loadInitialData();
+        connectWebSocket();
+
+        // Refresh recent matches every 10 minutes
+        setInterval(() => {
+            fetch(`${API_URL}/api/matches/recent`)
+                .then(r => r.json())
+                .then(matches => {
+                    allRecentMatches = matches;
+                    goToRecentPage(currentRecentPage);
+                    updateMatchCounts();
+                });
+        }, 600000);
+    </script>
+</body>
+</html>

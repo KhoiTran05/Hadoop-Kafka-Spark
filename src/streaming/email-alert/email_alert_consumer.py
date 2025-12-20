@@ -11,21 +11,44 @@ from typing import Dict, Any
 
 EMAIL_CONFIG = {
     'smtp_server': os.getenv('SMTP_SERVER'),
-    'smtp_port': int(os.getenv('SMTP_PORT')),
+    'smtp_port': int(os.getenv('SMTP_PORT', 587)),
     'sender_email': os.getenv('SENDER_EMAIL'),
     'sender_password': os.getenv('SENDER_PASSWORD'),
-    'recipient_emails': os.getenv('RECIPIENT_EMAILS').split(',')
+    'recipient_emails': os.getenv('RECIPIENT_EMAILS').split(',') if os.getenv('RECIPIENT_EMAILS') else []
 }
 
 consumer = KafkaConsumer(
     'weather-alert',
-    bootstrap_servers=['localhost:9092'],
+    bootstrap_servers=[os.getenv("KAFKA_BROKER_URL")],
     group_id='email-alert-group',
     auto_offset_reset='latest', 
     value_deserializer=lambda x: json.loads(x.decode('utf-8'))
 )
 
-redis_server = redis.Redis(host='localhost', port=6379) 
+REDIS_HOST = os.getenv('REDIS_HOST', 'redis')
+REDIS_PORT = int(os.getenv('REDIS_PORT', 6379))
+REDIS_DB = int(os.getenv('REDIS_DB', 0))
+
+if not REDIS_HOST or not isinstance(REDIS_HOST, str):
+    logger.error(f"Invalid REDIS_HOST: {REDIS_HOST}")
+    redis_server = None
+else:
+    try:
+        redis_server = redis.Redis(
+            host=REDIS_HOST,
+            port=REDIS_PORT,
+            db=REDIS_DB,
+            decode_responses=True,
+            socket_timeout=5,
+            socket_connect_timeout=5,
+            retry_on_timeout=True
+        )
+  
+        redis_server.ping()
+        logger.info(f"Successfully connected to Redis at {REDIS_HOST}:{REDIS_PORT}")
+    except Exception as e:
+        logger.error(f"Failed to connect to Redis: {e}")
+        redis_server = None
 
 class EmailAlertSender:
     def __init__(self, config: Dict[str, Any]):
@@ -327,7 +350,10 @@ def send_email_deduplicated(email_sender, alert_data, ano_list, alert_type, offs
                         logger.info("Reconnected to SMTP server")
                 
                 redis_server.setex(dedup_key, redis_retention, "1")
-                
+            
+            except redis.exceptions.RedisError as e:
+                logger.error(f"Redis error during deduplication: {e}")
+            
             except Exception as e:
                 logger.error(f"Error sending deduplicated email: {e}")
 

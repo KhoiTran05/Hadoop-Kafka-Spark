@@ -1,0 +1,17 @@
+{
+  "name": "football-dashboard",
+  "version": "1.0.0",
+  "description": "Real-time football match dashboard",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "socket.io": "^4.6.1",
+    "kafkajs": "^2.2.4",
+    "ioredis": "^5.3.2",
+    "pg": "^8.11.3",
+    "cors": "^2.8.5"
+  }
+}
