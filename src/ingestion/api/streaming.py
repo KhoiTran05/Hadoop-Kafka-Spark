@@ -20,7 +20,6 @@ WEATHER_INTERVAL_SECONDS = 60
 FOOTBALL_API_INTERVAL_SECONDS = 30
 
 LIVE_FOOTBALL_TOPIC = "football_live"
-HISTORY_FOOTBALL_TOPIC = "football_history"
 WEATHER_TOPIC = "weather"
                 
 class DataIngestionPipeline:
@@ -208,7 +207,7 @@ class DataIngestionPipeline:
         date_to = str((datetime.now() + timedelta(days=1)).date())
         
         live_matches = []
-        finished_matches = []
+
         try:
             params = {
                 "dateFrom": date_from,
@@ -224,22 +223,16 @@ class DataIngestionPipeline:
             fetch_timestamp = datetime.now().isoformat()
             for match in all_matches:
                 match['ingested_at'] = fetch_timestamp
-                status = match['status']
-                if status == 'FINISHED':
-                    finished_matches.append(match)
-                else:
-                    live_matches.append(match)
-            
-            if finished_matches:
-                validate_data('recent_finish_football', finished_matches, 
-                                   {"id", "utcDate", "homeTeam", "awayTeam", "score", "ingested_at"})
+                
+                live_matches.append(match)
+                
             if live_matches:
                 validate_data('live_football', live_matches,  
                                    {"id", "utcDate", "homeTeam", "awayTeam", "score", "ingested_at"})
             
-            logger.info(f"Fetched {len(all_matches)} total, {len(live_matches)} LIVE/SCHEDULED, {len(finished_matches)} FINISHED.")
+            logger.info(f"Fetched {len(all_matches)} total, {len(live_matches)} LIVE/TIME/FINISHED matches.")
             
-            return {'live': live_matches, 'recent_finish': finished_matches}
+            return live_matches
         
         except requests.RequestException as e:
             logger.error(f"Error fetching football data: {e}")
@@ -261,23 +254,21 @@ class DataIngestionPipeline:
             now_time = now.time()
             try:
                 if (now - football_last_run).total_seconds() >= FOOTBALL_API_INTERVAL_SECONDS:
-                    football_data = self.get_football_data()
-                    live_matches = football_data.get('live')
-                    finished_matches = football_data.get('recent_finish')
-                    
+                    live_matches = self.get_football_data()
+        
                     if live_matches:
                         for match in live_matches:
                             self.produce_to_kakfa(self.football_producer, LIVE_FOOTBALL_TOPIC, match.get('id'), match)
-                    if finished_matches:
-                        for match in finished_matches:
-                            self.produce_to_kakfa(self.football_producer, HISTORY_FOOTBALL_TOPIC, match.get('id'), match)
+
                     football_last_run = now
                 
                 if START_TIME <= now_time <= END_TIME and (now - weather_last_run).total_seconds() >= WEATHER_INTERVAL_SECONDS:
                     weather_data = self.get_weather_data()
+                    
                     if weather_data:
                         for record in weather_data:
                             self.produce_to_kakfa(self.weather_producer, WEATHER_TOPIC, record.get('id'), record)
+                            
                     weather_last_run = now
                     
                 time.sleep(10)  

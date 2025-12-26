@@ -382,7 +382,6 @@ def main():
             
             alert_type = alert_data["alert_type"]
             
-            # Email dedup
             if alert_type == "threshold":
                 ano_list = ("temp_anomaly", "pressure_anomaly", 
                                 "visibility_anomaly", "wind_anomaly")

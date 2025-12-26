@@ -266,6 +266,9 @@ services:
     depends_on:
       - spark-master
 
+  # export KAFKA_BROKER_URL=kafka:29092
+  # export SCHEMA_REGISTRY_URL=http://schema-registry:8081
+  #spark-submit --master spark://spark-master:7077 /opt/bitnami/spark/streaming/weather_stream.py
   spark-submit:
     build:
       context: .
@@ -277,6 +280,9 @@ services:
     environment:
       - KAFKA_BROKER_URL=kafka:29092 
       - SCHEMA_REGISTRY_URL=http://schema-registry:8081
+      - BRONZE_LAYER_PATH=${BRONZE_LAYER_PATH}
+      - SILVER_LAYER_PATH=${SILVER_LAYER_PATH}
+      - GOLD_LAYER_PATH=${GOLD_LAYER_PATH}
     volumes:
       - ./src/streaming:/opt/bitnami/spark/streaming
       - ./utils:/opt/bitnami/spark/utils
@@ -378,6 +384,7 @@ services:
     volumes:
       - ./airflow/dags:/opt/airflow/dags
       - ./src/ingestion:/opt/airflow/ingestion
+      - ./src/batch:/opt/airflow/batch
       - ./utils:/opt/airflow/utils
       - ./data:/data 
       - ./logs:/opt/airflow/logs 
@@ -388,62 +395,6 @@ services:
       - airflow-init
     command: scheduler
 
-  # ------------------------------------------------------------------
-  # ANALYTICS & MONITORING (ELK, Prometheus, Grafana)
-  # ------------------------------------------------------------------
-  # elasticsearch:
-  #   image: docker.elastic.co/elasticsearch/elasticsearch:8.10.0
-  #   hostname: elasticsearch
-  #   ports:
-  #     - "9200:9200"
-  #     - "9300:9300"
-  #   environment:
-  #     - discovery.type=single-node
-  #     - xpack.security.enabled=false
-  #     - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
-  #   volumes:
-  #     - elasticsearch_data:/usr/share/elasticsearch/data
-
-  # kibana:
-  #   image: docker.elastic.co/kibana/kibana:8.10.0
-  #   hostname: kibana
-  #   ports:
-  #     - "5601:5601"
-  #   environment:
-  #     - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
-  #   depends_on:
-  #     - elasticsearch
-
-  # prometheus:
-  #   image: prom/prometheus:latest
-  #   hostname: prometheus
-  #   ports:
-  #     - "9090:9090"
-  #   volumes:
-  #     # Sửa đường dẫn tới file config Prometheus
-  #     - ./infrastructure/monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
-  #     - prometheus_data:/prometheus
-  #   command:
-  #     - '--config.file=/etc/prometheus/prometheus.yml'
-  #     # ... (các command khác) ...
-
-  # grafana:
-  #   image: grafana/grafana:latest
-  #   hostname: grafana
-  #   ports:
-  #     - "3000:3000"
-  #   volumes:
-  #     - grafana_data:/var/lib/grafana
-  #     # Sửa đường dẫn tới provisioning
-  #     - ./infrastructure/monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
-  #     - ./infrastructure/monitoring/grafana/datasources:/etc/grafana/provisioning/datasources
-  #   environment:
-  #     - GF_SECURITY_ADMIN_PASSWORD=admin
-  #     - GF_USERS_ALLOW_SIGN_UP=false
-
-# ------------------------------------------------------------------
-# VOLUMES
-# ------------------------------------------------------------------
 volumes:
   zookeeper_data:
   kafka_data:

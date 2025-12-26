@@ -16,6 +16,7 @@ class FootballStreamProcessor:
         return SparkSession.builder \
             .appName("LiveFootballStreamProcessor") \
             .config("spark.sql.streaming.checkpointLocation", "hdfs://namenode:9000/checkpoints/football") \
+            .getOrCreate()
             
     def get_schema(self, topic):
         schema_registry = os.getenv("SCHEMA_REGISTRY_URL")
@@ -94,7 +95,7 @@ class FootballStreamProcessor:
                 .outputMode("append") \
                 .option("kafka.bootstrap.servers", self.kafka_servers) \
                 .option("topic", topic) \
-                .option("checkpointLocation", f"hdfs://namenode:9000/checkpoints/weather/{checkpoint_location}") \
+                .option("checkpointLocation", f"hdfs://namenode:9000/checkpoints/football/{checkpoint_location}") \
                 .start()
             
             return query
@@ -107,7 +108,7 @@ class FootballStreamProcessor:
         except Exception as e:
             logger.exception(f"Failed to write to '{topic}' topic")
             
-    def process_football(self, df):
+    def process_data(self, df):
         df = df \
             .withWatermark("event_timestamp", "1 day") \
             .dropDuplicates(["id", "lastUpdated"]) \
@@ -133,7 +134,7 @@ def main():
     schema = processor.get_schema("football_live")
     
     df = processor.read_kafka_stream("football_live", schema)
-    processed_df = processor.process_football(df)
+    processed_df = processor.process_data(df)
     
     query = processor.write_to_kakfa(processed_df, "processed-matches", "processed")
     query.awaitTermination()

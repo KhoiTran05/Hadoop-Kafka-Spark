@@ -19,19 +19,18 @@ class WeatherStreamProcessor:
             
     def get_schema(self, topic):
         schema_registry = os.getenv("SCHEMA_REGISTRY_URL")
+        
         try:
             response = requests.get(
                 f"{schema_registry}/subjects/{topic}-value/versions/latest/schema"
             )
             response.raise_for_status()
-            
             logger.info(f"Successfully get '{topic}' schema from Schema Registry")
             
-            avro_schema = response.text
-            return avro_schema
+            return response.text
         except Exception as e:
-            logger.error(f"Failed to get schema for {topic}: {str(e)}")
-            return None
+            logger.exception(f"Failed to get schema for {topic}: {str(e)}")
+            raise
         
     def read_kafka_stream(self, topic, schema):
         df = self.spark \
@@ -52,35 +51,48 @@ class WeatherStreamProcessor:
                 ) \
                 .withColumn("data", from_avro(col("avro_value"), schema)) \
                 .select("data.*") \
-                .withColumn("event_timestamp", to_timestamp(from_unixtime(col("dt")))) 
+                .withColumn("event_timestamp", to_timestamp(from_unixtime(col("dt")))) \
+                .withColumn("ingested_at", to_timestamp(col("ingested_at")))
                 
         return df_avro
-    
-    def write_stream_to_console(self, df, output_mode, checkpoint_location):
+        
+    def write_to_console(self, 
+                         df, 
+                         output_mode, 
+                         checkpoint_suffix):
+        logger.info("Start writing to console ...")
+        
+        query = None
         try:
-            logger.info("Start writing stream to console ...")
-            
             query = df.writeStream \
                 .outputMode(output_mode) \
                 .format("console") \
                 .option("truncate", False) \
-                .option("checkpointLocation", f"hdfs://namenode:9000/checkpoints/weather/{checkpoint_location}") \
+                .option("checkpointLocation", f"hdfs://namenode:9000/checkpoints/weather/{checkpoint_suffix}") \
                 .start()
                 
             query.awaitTermination()
             
+            return query
         except KeyboardInterrupt:
             logger.info("Streaming stopped by user")
-            
             query.stop() 
             logger.info("Streaming query stopped successfully.")
         except Exception as e:
             logger.error("Failed to write stream to console")
-    
-    def write_to_alert_topic(self, df, topic, checkpoint_location):           
-        try:
-            logger.info(f"Start writing stream to '{topic}' topic ...")
             
+            if query:
+                query.stop()
+            raise
+    
+    def write_to_alert_topic(self, 
+                             df, 
+                             topic, 
+                             checkpoint_suffix):       
+        logger.info(f"Start writing to '{topic}' topic ...")    
+        
+        query = None
+        try:
             query = df \
                 .selectExpr(
                     "CAST(NULL AS STRING) AS key",
@@ -90,14 +102,75 @@ class WeatherStreamProcessor:
                 .format("kafka") \
                 .option("kafka.bootstrap.servers", self.kafka_servers) \
                 .option("topic", topic) \
-                .option("checkpointLocation", f"hdfs://namenode:9000/checkpoints/weather/{checkpoint_location}") \
+                .option("checkpointLocation", f"hdfs://namenode:9000/checkpoints/weather/{checkpoint_suffix}") \
                 .start()
                 
             return query
-            
         except Exception as e:
-            logger.error(f"Failed to write to '{topic}' topic")
+            logger.exception(f"Failed to write to '{topic}' topic")
             
+            if query:
+                query.stop()
+            raise
+    
+    def write_to_bronze_layer(self, df):
+        """Write raw weather data to HDFS Bronze Layer"""
+        bronze_layer_path = f"{os.getenv('BRONZE_LAYER_PATH')}/weather"
+        logger.info("Writting to HDFS bronze layer")
+        
+        query = None
+        try:
+            query = df.writeStream \
+                .partitionBy("ingested_at") \
+                .format("parquet") \
+                .outputMode("append") \
+                .option("path", bronze_layer_path) \
+                .option("checkpointLocation", "hdfs://namenode:9000/checkpoints/weather/bronze") \
+                .trigger(processingTime="10 minutes") \
+                .start()
+
+            return query
+        except Exception as e:
+            logger.exception("Failed to write to bronze layer")
+            
+            if query:
+                query.stop()
+            raise
+        
+    def write_to_silver_layer(self, 
+                              df, 
+                              dataset_name, 
+                              checkpoint_suffix,
+                              partition_cols=None, 
+                              trigger="10 minutes"):
+        """Write cleaned and enriched weather data to HDFS Silver Layer"""
+        logger.info("Writting to HDFS silver layer")
+        
+        silver_layer_path = f"{os.getenv('SILVER_LAYER_PATH')}/weather/{dataset_name}"
+        checkpoint_path = f"hdfs://namenode:9000/checkpoints/weather/silver/{checkpoint_suffix}"
+        
+        query = None
+        try:
+            writer = df.writeStream \
+                .format("parquet") \
+                .outputMode("append") \
+                .option("path", silver_layer_path) \
+                .option("checkpointLocation", checkpoint_path) \
+                .trigger(processingTime=trigger) 
+            
+            if partition_cols:
+                writer = writer.partitionBy(*partition_cols)
+                
+            query = writer.start()
+            
+            return query
+        except Exception as e:
+            logger.exception("Failed to write to silver layer")
+            
+            if query:
+                query.stop()
+            raise
+    
     def threshold_based_anomaly_detect(self, df):
         """
         Detect weather anomalies using threshold
@@ -108,7 +181,7 @@ class WeatherStreamProcessor:
             DataFrame: Dataframe with anomaly features
         """
         
-        anomaly = df \
+        result = df \
             .select(
                 "event_timestamp",
                 lit("threshold").alias("alert_type"),
@@ -127,13 +200,6 @@ class WeatherStreamProcessor:
             .withColumn("pressure_anomaly", expr("CASE WHEN pressure <= 995 OR pressure >= 1033 THEN True ELSE False END")) \
             .withColumn("visibility_anomaly", expr("CASE WHEN visibility <= 1000 THEN True ELSE False END")) \
             .withColumn("wind_anomaly", expr("CASE WHEN wind_speed >= 10 THEN True ELSE False END")) \
-                
-        result = anomaly.filter(
-            (col("temp_anomaly") == True) |
-            (col("pressure_anomaly") == True) |
-            (col("visibility_anomaly") == True) |
-            (col("wind_anomaly") == True) 
-        )
         
         return result
                 
@@ -146,7 +212,6 @@ class WeatherStreamProcessor:
         Returns:
             DataFrame: Dataframe with anomaly features
         """
-        df = df.withWatermark("event_timestamp", "2 minutes")
         
         agg_df = df \
             .groupBy(
@@ -196,15 +261,8 @@ class WeatherStreamProcessor:
             .withColumn("visibility_change_anomaly", when((col("avg_vis") > 5000) & (col("min_vis_info.visibility") < 2000), "drop/unstable")
                                             .otherwise(None))
             
-        filtered = anomaly.filter(
-            col("temp_change_anomaly").isNotNull() |
-            col("pressure_change_anomaly").isNotNull() |
-            col("wind_change_anomaly").isNotNull() |
-            col("humidity_change_anomaly").isNotNull() |
-            col("visibility_change_anomaly").isNotNull()
-        )
         
-        result = filtered.select(
+        result = anomaly.select(
             lit("change").alias("alert_type"),
             col("city"),
             col("country"),
@@ -239,23 +297,138 @@ class WeatherStreamProcessor:
         )
         
         return result
+
+    def weather_anomalies_detect(self, df):
+        df_threshold = self.threshold_based_anomaly_detect(df)
+        df_change = self.change_anomaly_detect(df)
+        
+        if df_threshold and not df_threshold.isEmpty():
+            df_threshold = df_threshold.filter(
+                (col("temp_anomaly") == True) |
+                (col("pressure_anomaly") == True) |
+                (col("visibility_anomaly") == True) |
+                (col("wind_anomaly") == True) 
+            )
+            
+            logger.info(f"Records with threshold-based anomalies detected")
+            
+        if df_change and not df_change.isEmpty():
+            df_change = df_change.filter(
+                col("temp_change_anomaly").isNotNull() |
+                col("pressure_change_anomaly").isNotNull() |
+                col("wind_change_anomaly").isNotNull() |
+                col("humidity_change_anomaly").isNotNull() |
+                col("visibility_change_anomaly").isNotNull()
+            )
+            
+            logger.info(f"Records with change anomalies detected")
+            
+        return {
+            "threshold": df_threshold,
+            "change": df_change
+        }
     
-    
+    def batch_process(self, batch_df, batch_id):
+        """Process each micro-batch"""
+        try:
+            logger.info(f"Processing batch {batch_id} with {batch_df.count()} records")
+            
+            bronze_path = f"{os.getenv('BRONZE_LAYER_PATH')}/weather"
+            batch_df.write \
+                .mode("append") \
+                .partitionBy("ingested_at") \
+                .parquet(bronze_path)
+            logger.info("Successfully wrote raw records to HDFS Bronze Layer")
+            
+            df_base = batch_df \
+                .dropDuplicates(["city", "event_timestamp"]) \
+                .na.drop(subset=["city", "country", "event_timestamp"])
+                
+            df_threshold = self.threshold_based_anomaly_detect(df_base)
+            
+            df_threshold_alerts = df_threshold.filter(
+                (col("temp_anomaly") == True) |
+                (col("pressure_anomaly") == True) |
+                (col("visibility_anomaly") == True) |
+                (col("wind_anomaly") == True) 
+            )
+            
+            if not df_threshold_alerts.isEmpty():
+                df_threshold_alerts \
+                    .selectExpr(
+                        "CAST(NULL AS STRING) AS key",
+                        "CAST(to_json(struct(*)) AS STRING) AS value"
+                    ) \
+                    .write \
+                    .format("kafka") \
+                    .option("kafka.bootstrap.servers", self.kafka_servers) \
+                    .option("topic", "weather-alert") \
+                    .save()
+                logger.info(f"Wrote {df_threshold.count()} threshold anomalies to alert topic")
+            
+            df_threshold_silver = df_threshold \
+                .withColumn("month", month(col("event_timestamp"))) \
+                .withColumn("day", day(col("event_timestamp"))) \
+                .withColumn("hour", hour(col("event_timestamp"))) \
+                .withColumn("processed_at", current_timestamp())
+            
+            silver_threshold_path = f"{os.getenv('SILVER_LAYER_PATH')}/weather/threshold_anomalies"
+            df_threshold_silver.write \
+                .mode("append") \
+                .partitionBy("month", "day", "hour") \
+                .parquet(silver_threshold_path)
+            
+            logger.info("Successfully wrote transformed records to HDFS Silver Layer")
+            
+        except Exception as e:
+            logger.exception(f"Error processing batch {batch_id}")
+            raise
+        
     def start_weather_stream_pipeline(self):
         logger.info("Start weather streaming pipeline ...")
         
-        topic = 'weather'
-        schema = self.get_schema(topic)
-        df_raw = self.read_kafka_stream(topic, schema)
-        
-        threshold_detect_df = self.threshold_based_anomaly_detect(df_raw)
-        threshold_query = self.write_to_alert_topic(threshold_detect_df, 'weather-alert', 'threshold_detect')
-        
-        change_detect_df = self.change_anomaly_detect(df_raw)
-        change_query = self.write_to_alert_topic(change_detect_df, 'weather-alert', 'change_detect')
-        
-        self.spark.streams.awaitAnyTermination()
+        try:
+            schema = self.get_schema("weather")
+            df_raw = self.read_kafka_stream("weather", schema)
+            
+            query = df_raw.writeStream \
+                .foreachBatch(self.batch_process) \
+                .option("checkpointLocation", "hdfs://namenode:9000/checkpoints/weather/main") \
+                .trigger(processingTime="1 minute") \
+                .start()
+            
+            df_change = self.change_anomaly_detect(df_raw)
+            
+            df_change_alerts = df_change.filter(
+                col("temp_change_anomaly").isNotNull() |
+                col("pressure_change_anomaly").isNotNull() |
+                col("wind_change_anomaly").isNotNull() |
+                col("humidity_change_anomaly").isNotNull() |
+                col("visibility_change_anomaly").isNotNull()
+            )
+            
+            query_change_alert = self.write_to_alert_topic(df_change_alerts, "weather-alert", "change_alert")
+            
+            df_base = df_raw \
+                .withWatermark("event_timestamp", "5 minutes") \
+                .dropDuplicates(["city", "event_timestamp"]) \
+                .na.drop(subset=["city", "country", "event_timestamp"])
+                
+            df_change_silver = self.change_anomaly_detect(df_base) \
+                .withColumn("month", month(col("window_start"))) \
+                .withColumn("day", day(col("window_start"))) \
+                .withColumn("hour", hour(col("window_start"))) \
+                .withColumn("processed_at", current_timestamp())
+                
+            query_change_silver = self.write_to_silver_layer(df_change_silver, "change_anomalies", 
+                                                             "change_silver", ["month", "day", "hour"])
 
+            logger.info("Weather streaming pipeline started successfully")
+            self.spark.streams.awaitAnyTermination()
+        except Exception:
+            logger.exception("Error during weather stream pipeline execution")
+            raise
+        
 def main():
     processor = WeatherStreamProcessor()
     processor.start_weather_stream_pipeline()
