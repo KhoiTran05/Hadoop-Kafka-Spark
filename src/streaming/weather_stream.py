@@ -51,7 +51,10 @@ class WeatherStreamProcessor:
                 ) \
                 .withColumn("data", from_avro(col("avro_value"), schema)) \
                 .select("data.*") \
-                .withColumn("event_timestamp", to_timestamp(from_unixtime(col("dt")))) \
+                .withColumn(
+                    "event_timestamp", 
+                    from_utc_timestamp(to_timestamp(from_unixtime(col("dt"))), "Asia/Ho_Chi_Minh")
+                ) \
                 .withColumn("ingested_at", to_timestamp(col("ingested_at")))
                 
         return df_avro
@@ -181,7 +184,7 @@ class WeatherStreamProcessor:
             DataFrame: Dataframe with anomaly features
         """
         
-        result = df \
+        df_threshold_alerts = df \
             .select(
                 "event_timestamp",
                 lit("threshold").alias("alert_type"),
@@ -200,6 +203,13 @@ class WeatherStreamProcessor:
             .withColumn("pressure_anomaly", expr("CASE WHEN pressure <= 995 OR pressure >= 1033 THEN True ELSE False END")) \
             .withColumn("visibility_anomaly", expr("CASE WHEN visibility <= 1000 THEN True ELSE False END")) \
             .withColumn("wind_anomaly", expr("CASE WHEN wind_speed >= 10 THEN True ELSE False END")) \
+        
+        result = df_threshold_alerts.filter(
+                (col("temp_anomaly") == True) |
+                (col("pressure_anomaly") == True) |
+                (col("visibility_anomaly") == True) |
+                (col("wind_anomaly") == True) 
+            )
         
         return result
                 
@@ -262,71 +272,49 @@ class WeatherStreamProcessor:
                                             .otherwise(None))
             
         
-        result = anomaly.select(
-            lit("change").alias("alert_type"),
-            col("city"),
-            col("country"),
-            col("time_window.start").alias("window_start"), 
-            
-            col("max_temp_info.temperature").alias("max_temp"),
-            col("max_temp_info.event_timestamp").alias("max_temp_time"), 
-            col("min_temp_info.temperature").alias("min_temp"),
-            col("min_temp_info.event_timestamp").alias("min_temp_time"),
-            col("temp_rise"),
-            col("temp_fall"),
-            col("temp_change_anomaly"),
-            
-            col("max_wind_info.wind_speed").alias("max_wind"),
-            col("max_wind_info.event_timestamp").alias("max_wind_time"),
-            col("wind_rise"),
-            col("wind_change_anomaly"),
-            
-            col("min_pressure_info.pressure").alias("min_pressure"),
-            col("min_pressure_info.event_timestamp").alias("min_pressure_time"),
-            col("pressure_drop"),
-            col("pressure_change_anomaly"),
-            
-            col("max_humidity_info.humidity").alias("max_humidity"),
-            col("max_humidity_info.event_timestamp").alias("max_humid_time"),
-            col("humidity_rise"),
-            col("humidity_change_anomaly"),
-
-            col("min_vis_info.visibility").alias("min_visibility"),
-            col("min_vis_info.event_timestamp").alias("min_visibility_time"),
-            col("visibility_change_anomaly")
-        )
-        
-        return result
-
-    def weather_anomalies_detect(self, df):
-        df_threshold = self.threshold_based_anomaly_detect(df)
-        df_change = self.change_anomaly_detect(df)
-        
-        if df_threshold and not df_threshold.isEmpty():
-            df_threshold = df_threshold.filter(
-                (col("temp_anomaly") == True) |
-                (col("pressure_anomaly") == True) |
-                (col("visibility_anomaly") == True) |
-                (col("wind_anomaly") == True) 
-            )
-            
-            logger.info(f"Records with threshold-based anomalies detected")
-            
-        if df_change and not df_change.isEmpty():
-            df_change = df_change.filter(
+        result = anomaly \
+            .filter(
                 col("temp_change_anomaly").isNotNull() |
                 col("pressure_change_anomaly").isNotNull() |
                 col("wind_change_anomaly").isNotNull() |
                 col("humidity_change_anomaly").isNotNull() |
                 col("visibility_change_anomaly").isNotNull()
+            ) \
+            .select(
+                lit("change").alias("alert_type"),
+                col("city"),
+                col("country"),
+                col("time_window.start").alias("window_start"), 
+                
+                col("max_temp_info.temperature").alias("max_temp"),
+                col("max_temp_info.event_timestamp").alias("max_temp_time"), 
+                col("min_temp_info.temperature").alias("min_temp"),
+                col("min_temp_info.event_timestamp").alias("min_temp_time"),
+                col("temp_rise"),
+                col("temp_fall"),
+                col("temp_change_anomaly"),
+                
+                col("max_wind_info.wind_speed").alias("max_wind"),
+                col("max_wind_info.event_timestamp").alias("max_wind_time"),
+                col("wind_rise"),
+                col("wind_change_anomaly"),
+                
+                col("min_pressure_info.pressure").alias("min_pressure"),
+                col("min_pressure_info.event_timestamp").alias("min_pressure_time"),
+                col("pressure_drop"),
+                col("pressure_change_anomaly"),
+                
+                col("max_humidity_info.humidity").alias("max_humidity"),
+                col("max_humidity_info.event_timestamp").alias("max_humid_time"),
+                col("humidity_rise"),
+                col("humidity_change_anomaly"),
+
+                col("min_vis_info.visibility").alias("min_visibility"),
+                col("min_vis_info.event_timestamp").alias("min_visibility_time"),
+                col("visibility_change_anomaly")
             )
-            
-            logger.info(f"Records with change anomalies detected")
-            
-        return {
-            "threshold": df_threshold,
-            "change": df_change
-        }
+        
+        return result
     
     def batch_process(self, batch_df, batch_id):
         """Process each micro-batch"""
@@ -334,51 +322,13 @@ class WeatherStreamProcessor:
             logger.info(f"Processing batch {batch_id} with {batch_df.count()} records")
             
             bronze_path = f"{os.getenv('BRONZE_LAYER_PATH')}/weather"
+            
             batch_df.write \
                 .mode("append") \
                 .partitionBy("ingested_at") \
                 .parquet(bronze_path)
-            logger.info("Successfully wrote raw records to HDFS Bronze Layer")
-            
-            df_base = batch_df \
-                .dropDuplicates(["city", "event_timestamp"]) \
-                .na.drop(subset=["city", "country", "event_timestamp"])
                 
-            df_threshold = self.threshold_based_anomaly_detect(df_base)
-            
-            df_threshold_alerts = df_threshold.filter(
-                (col("temp_anomaly") == True) |
-                (col("pressure_anomaly") == True) |
-                (col("visibility_anomaly") == True) |
-                (col("wind_anomaly") == True) 
-            )
-            
-            if not df_threshold_alerts.isEmpty():
-                df_threshold_alerts \
-                    .selectExpr(
-                        "CAST(NULL AS STRING) AS key",
-                        "CAST(to_json(struct(*)) AS STRING) AS value"
-                    ) \
-                    .write \
-                    .format("kafka") \
-                    .option("kafka.bootstrap.servers", self.kafka_servers) \
-                    .option("topic", "weather-alert") \
-                    .save()
-                logger.info(f"Wrote {df_threshold.count()} threshold anomalies to alert topic")
-            
-            df_threshold_silver = df_threshold \
-                .withColumn("month", month(col("event_timestamp"))) \
-                .withColumn("day", day(col("event_timestamp"))) \
-                .withColumn("hour", hour(col("event_timestamp"))) \
-                .withColumn("processed_at", current_timestamp())
-            
-            silver_threshold_path = f"{os.getenv('SILVER_LAYER_PATH')}/weather/threshold_anomalies"
-            df_threshold_silver.write \
-                .mode("append") \
-                .partitionBy("month", "day", "hour") \
-                .parquet(silver_threshold_path)
-            
-            logger.info("Successfully wrote transformed records to HDFS Silver Layer")
+            logger.info("Successfully wrote raw records to HDFS Bronze Layer")
             
         except Exception as e:
             logger.exception(f"Error processing batch {batch_id}")
@@ -387,51 +337,71 @@ class WeatherStreamProcessor:
     def start_weather_stream_pipeline(self):
         logger.info("Start weather streaming pipeline ...")
         
-        try:
-            schema = self.get_schema("weather")
-            df_raw = self.read_kafka_stream("weather", schema)
-            
-            query = df_raw.writeStream \
-                .foreachBatch(self.batch_process) \
-                .option("checkpointLocation", "hdfs://namenode:9000/checkpoints/weather/main") \
-                .trigger(processingTime="1 minute") \
-                .start()
-            
-            df_change = self.change_anomaly_detect(df_raw)
-            
-            df_change_alerts = df_change.filter(
-                col("temp_change_anomaly").isNotNull() |
-                col("pressure_change_anomaly").isNotNull() |
-                col("wind_change_anomaly").isNotNull() |
-                col("humidity_change_anomaly").isNotNull() |
-                col("visibility_change_anomaly").isNotNull()
-            )
-            
-            query_change_alert = self.write_to_alert_topic(df_change_alerts, "weather-alert", "change_alert")
-            
-            df_base = df_raw \
-                .withWatermark("event_timestamp", "5 minutes") \
-                .dropDuplicates(["city", "event_timestamp"]) \
-                .na.drop(subset=["city", "country", "event_timestamp"])
-                
-            df_change_silver = self.change_anomaly_detect(df_base) \
-                .withColumn("month", month(col("window_start"))) \
-                .withColumn("day", day(col("window_start"))) \
-                .withColumn("hour", hour(col("window_start"))) \
-                .withColumn("processed_at", current_timestamp())
-                
-            query_change_silver = self.write_to_silver_layer(df_change_silver, "change_anomalies", 
-                                                             "change_silver", ["month", "day", "hour"])
-
-            logger.info("Weather streaming pipeline started successfully")
-            self.spark.streams.awaitAnyTermination()
-        except Exception:
-            logger.exception("Error during weather stream pipeline execution")
-            raise
+        schema = self.get_schema("weather")
+        df_raw = self.read_kafka_stream("weather", schema)
         
+        query = df_raw.writeStream \
+            .foreachBatch(self.batch_process) \
+            .option("checkpointLocation", "hdfs://namenode:9000/checkpoints/weather/main") \
+            .trigger(processingTime="1 minute") \
+            .start()
+        
+        df_base_threshold = df_raw \
+            .dropDuplicates(["city", "event_timestamp"]) \
+            .na.drop(subset=["city", "country", "event_timestamp"])
+                
+        df_threshold_alerts = self.threshold_based_anomaly_detect(df_base_threshold)
+            
+        query_threshold_alert = self.write_to_alert_topic(df_threshold_alerts, "weather-alert", "threshold_alert")
+            
+        df_threshold_silver = df_threshold_alerts \
+            .withColumn("year", year(col("event_timestamp"))) \
+            .withColumn("month", month(col("event_timestamp"))) \
+            .withColumn("day", day(col("event_timestamp"))) \
+            .withColumn("processed_at", current_timestamp())
+            
+        query_threshold_silver = self.write_to_silver_layer(
+            df_threshold_silver, 
+            "threshold_anomalies",
+            "threshold_silver", 
+            ["year", "month", "day"]
+        )
+            
+        df_base_change = df_raw \
+            .withWatermark("event_timestamp", "5 minutes") \
+            .dropDuplicates(["city", "event_timestamp"]) \
+            .na.drop(subset=["city", "country", "event_timestamp"])
+
+        df_change_alerts = self.change_anomaly_detect(df_base_change)
+
+        query_change_alert = self.write_to_alert_topic(df_change_alerts, "weather-alert", "change_alert")
+            
+        df_change_silver = df_change_alerts \
+            .withColumn("year", year(col("window_start"))) \
+            .withColumn("month", month(col("window_start"))) \
+            .withColumn("day", day(col("window_start"))) \
+            .withColumn("processed_at", current_timestamp())
+            
+        query_change_silver = self.write_to_silver_layer(
+            df_change_silver, 
+            "change_anomalies",
+            "change_silver_v2", 
+            ["year", "month", "day"]
+        )
+
+        logger.info("Weather streaming pipeline started successfully")
+        self.spark.streams.awaitAnyTermination()
+        
+        return True
+    
 def main():
     processor = WeatherStreamProcessor()
-    processor.start_weather_stream_pipeline()
+    
+    try:
+        return processor.start_weather_stream_pipeline()
+    except Exception:
+        logger.exception("Error during weather stream pipeline execution")
+        raise
     
 if __name__ == '__main__':
     main()

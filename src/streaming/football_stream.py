@@ -110,7 +110,7 @@ class FootballStreamProcessor:
             
     def process_data(self, df):
         df = df \
-            .withWatermark("event_timestamp", "1 day") \
+            .withWatermark("event_timestamp", "5 minutes") \
             .dropDuplicates(["id", "lastUpdated"]) \
             .filter(col("homeTeam").isNotNull() & col("awayTeam").isNotNull()) \
             .select(
@@ -127,17 +127,26 @@ class FootballStreamProcessor:
             )
             
         return df
-            
+    
+    def start_football_stream_pipeline(self):
+        schema = self.get_schema("football_live")
+        
+        df = self.read_kafka_stream("football_live", schema)
+        processed_df = self.process_data(df)
+        
+        query = self.write_to_kakfa(processed_df, "processed-matches", "processed")
+        query.awaitTermination()
+        
+        return True
+    
 def main():
     processor = FootballStreamProcessor()
     
-    schema = processor.get_schema("football_live")
-    
-    df = processor.read_kafka_stream("football_live", schema)
-    processed_df = processor.process_data(df)
-    
-    query = processor.write_to_kakfa(processed_df, "processed-matches", "processed")
-    query.awaitTermination()
+    try:
+        return processor.start_football_stream_pipeline()
+    except Exception:
+        logger.exception("Error during football stream pipeline execution")
+        raise
     
 if __name__ == '__main__':
     main()

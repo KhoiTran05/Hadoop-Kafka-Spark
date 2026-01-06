@@ -16,3 +16,5 @@ config/*
 /checkpoints
 
 football-dashboard/node_modules
+
+**/.ipynb_checkpoints

@@ -21,7 +21,7 @@ if ! docker-compose ps jupyter | grep -q "Up"; then
 fi
 
 echo "Starting email alert consumer in background..."
-docker-compose exec -d jupyter python /home/jovyan/jobs/streaming/email_alert_consumer.py
+docker-compose exec -d jupyter python //home/jovyan/jobs/streaming/email_alert_consumer.py
 
 echo "Email alert consumer started successfully!"
 echo ""

@@ -10,7 +10,7 @@ from psycopg2.extras import execute_values
 from pathlib import Path
 from datetime import datetime, timezone, timedelta
 
-def get_historical_football_data(days_ago=14, **context):
+def get_historical_football_data(days_ago=7, **context):
     """Ingest football historical data from Football Data API"""
     logger.info("Fetching task started")
     
@@ -19,7 +19,7 @@ def get_historical_football_data(days_ago=14, **context):
         "X-Auth-Token": get_api_key("football")
     }
     
-    start = context["data_interval_end"] - timedelta(days=14)
+    start = context["data_interval_end"] - timedelta(days=7)
     end = context["data_interval_end"]
 
     date_from = start.date().isoformat()
@@ -79,12 +79,12 @@ def insert_postgres(**context):
     if not file_path:
         raise ValueError("No file path pulled from XCom")
     
-    if not historical_matches:
-            logger.warning("No matches to insert to PostgreSQL")
-            return
-    
     with open(file_path) as f:
         historical_matches = json.load(f)
+        
+    if not historical_matches:
+        logger.warning("No matches to insert to PostgreSQL")
+        return
         
     hook = PostgresHook(postgres_conn_id="postgres_football")
     conn = hook.get_conn()
@@ -153,8 +153,7 @@ def write_to_bronze_layer(**context):
             return
         
     import pandas as pd
-    from pyarrow import parquet
-    from pyarrow import fs
+    from urllib.parse import urlparse
     
     try:
         flattened_matches = []
@@ -202,23 +201,26 @@ def write_to_bronze_layer(**context):
             
         df = pd.DataFrame(flattened_matches)
         
-        execution_date = context["execution_date"]
+        logical_date = context["logical_date"]
         
-        df["batch_date"] = execution_date
-        df["batch_year"] = execution_date.year
-        df["batch_month"] = f"{execution_date.month:02d}"
-        df["batch_day"] = f"{execution_date.day:02d}"
+        df["batch_date"] = logical_date
+        df["batch_year"] = logical_date.year
+        df["batch_month"] = logical_date.month
+        df["batch_day"] = logical_date.day
         
         data_end = context["data_interval_end"]
-        data_start = data_end - timedelta(days=14)
+        data_start = data_end - timedelta(days=7)
 
         df["data_start_date"] = data_start.date().isoformat()
         df["data_end_date"] = (data_end - timedelta(days=1)).date().isoformat()
         
-        hdfs_path = f"{os.getenv('BRONZE_LAYER_PATH')}/football"
-        
+        bronze_layer_path = os.getenv('BRONZE_LAYER_PATH') 
+        parsed = urlparse(bronze_layer_path)
+
+        webhdfs_path = f"webhdfs://{parsed.hostname}:9870{parsed.path}/football"
+
         df.to_parquet(
-            hdfs_path,
+            webhdfs_path,
             partition_cols=["batch_year", "batch_month", "batch_day"],
             engine="pyarrow",
             compression="snappy",

@@ -1,44 +1,105 @@
-# Hadoop Ecosystem Real Data Pipeline
+﻿# Hadoop-Kafka-Spark Comprehensive Data Pipeline
 
-## Project Description
-This project implements a big data pipeline designed to handle both real-time streaming and batch processing requirements for football and weather data. The core of the system is Apache Kafka, serving as the central nervous system (Event Bus) that decouples data ingestion from processing.
+This project implements a comprehensive real-time data streaming and batch processing pipeline that ingests, processes, and analyzes data from multiple sources (OpenWeather API and football-data.org) using modern big data technologies.
 
-The solution integrates HDFS, Hive, Spark (Streaming & Batch), Kafka, and Airflow to create a robust platform for:
-
-- **Real-time**: Instant weather alerts and live Premier League football dashboards.
-- **Batch**: Historical analysis, complex ETL, and long-term data warehousing.
-
-## Data Source
-- **Type**: Multi-source real-world data streams
-- **Sources**:
-  - Football APIs: football-data.org
-  - Weather APIs: OpenWeatherMap
-- **Format**: JSON (Raw ingestion), Parquet (Storage), Avro (Schema Registry)
-- **Volume**: High-frequency polling for real-time layers
-- **Update Frequency**:
-  - **Real-time**: Every 5-60 seconds (Streaming)
-  - **Batch**: Hourly/Daily consolidation
-- **Data Retention**: 
-  - **Kafka**: 7 days (Buffer)
-  - **HDFS/Hive**: 5 years (Historical Source of Truth)
+![Architecture](docs/images/architecture.png)
 
 ## Tech Stack
-- **Storage**: Apache Hadoop HDFS 3.3.6 with tiered storage
-- **Data Warehouse**: Apache Hive 2.3.2 (Metastore on PostgreSQL)
-- **Event Backbone**: Apache Kafka 7.4.0 (KRaft/Zookeeper mode) + Schema Registry
-- **Processing Engine**: Spark 3.5.0 (Unified engine for both Batch & Structured Streaming)
-- **Orchestration**: Apache Airflow 2.8.4
-- **Real-time Store**: Redis 7 (Caching & Dashboard backend)
-- **Database**: PostgreSQL 13 (Metadata & Airflow backend)
+- **Storage**: Apache Hadoop HDFS 
+- **Data Warehouse**: Apache Hive (Metastore on PostgreSQL)
+- **Event Backbone**: Apache Kafka + Schema Registry
+- **Processing Engine**: Spark 
+- **Orchestration**: Apache Airflow 
+- **Real-time Store**: Redis (Caching & Dashboard backend)
+- **Database**: PostgreSQL (Metadata & Airflow backend)
 - **Monitoring**: Kafka UI, Spark UI, HDFS Web UI
 - **Container**: Docker & Docker Compose
 
-## Project Purpose
-- Handle real-world data complexity and irregularities
-- Implement robust error handling and data validation
-- Learn data ingestion patterns from various APIs
-- Practice large-scale data processing with HDFS
-- Understand data quality and cleansing processes
-- Implement automated data pipeline orchestration
+## Code layout
+
+- `src/ingestion/api/batch.py` and `src/ingestion/api/streaming.py`: Ingestion entrypoints.
+- `src/streaming/*`: Streaming consumers and email alert consumer.
+- `src/batch/*`: Batch processors intended to be invoked by Airflow tasks.
+- `src/schema`: Avro schema files for data validation.
+
+## Prerequisites
+
+- Docker and Docker Compose (Docker Desktop recommended)
+- Node.js + npm (for the dashboard)
+- Python 3.10 (for local development outside containers, optional)
+- API keys for external services (provided in .env.example)
+- Before running the project, download the following binaries and place them in the root directory of your project. You can use `wget` to download them directly:
+
+  - **Apache Hive 2.3.2**  
+  ```bash
+  wget https://archive.apache.org/dist/hive/hive-2.3.2/apache-hive-2.3.2-bin.tar.gz
+  ```
+  - **Apache Hadoop 3.3.6**
+  ```bash
+  wget https://archive.apache.org/dist/hadoop/common/hadoop-3.3.6/hadoop-3.3.6.tar.gz
+  ```
+  - **Apache Spark 3.5.0**
+  ```bash
+  wget https://archive.apache.org/dist/spark/spark-3.5.0/spark-3.5.0-bin-hadoop3.tgz
+  ```
+
+
+## Quick Start
+
+1. Clone the repo
+
+```bash
+git clone <your-repo-url> my-data-pipeline
+cd my-data-pipeline
+```
+
+2. Setup environment variables
+```bash
+cp .env.example .env
+# Edit .env with your API keys and Email configs
+```
+
+3. Bring up the platform 
+
+```bash
+# Start all services in detached mode
+docker-compose up -d
+
+# Wait until all services are running
+```
+
+4. Start data ingestion
+
+```bash
+# Start ingestion components
+./scripts/start-ingestion.sh
+```
+
+5. Football dashboard
+```bash
+# Start football streaming 
+./scripts/start-football-streaming.sh
+
+# Dashboard
+cd football-dashboard
+npm start
+
+# Access dashboard at http://localhost:3001/dashboard.html
+```
+
+6. Weather email alert
+```bash
+# Start weather streaming
+./scripts/start-weather-streaming.sh
+
+# Start email alert service
+./scripts/start-email-alert.sh
+```
+
+![Email-alert](docs/images/email-alert.png)
+
+
+
+
 
 

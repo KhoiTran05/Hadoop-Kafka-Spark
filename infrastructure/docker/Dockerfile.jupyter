@@ -1,0 +1,20 @@
+FROM jupyter/pyspark-notebook:spark-3.5.0
+
+USER root
+
+# Copy requirements files
+COPY infrastructure/docker/requirements.txt /tmp/requirements.txt
+
+# Install Python dependencies
+RUN pip install --no-cache-dir -r /tmp/requirements.txt
+
+# Create necessary directories
+RUN mkdir -p /home/jovyan/jobs/ingestion \
+             /home/jovyan/jobs/email-alert \
+             /home/jovyan/utils \
+             /home/jovyan/schema
+
+# Switch back to jovyan user
+USER $NB_UID
+
+WORKDIR /home/jovyan

@@ -153,9 +153,6 @@ services:
     image: bde2020/hive:2.3.2-postgresql-metastore 
     container_name: hive-metastore
     hostname: hive-metastore
-    # Sử dụng env_file để nạp các biến HDFS/DB (nếu cần)
-    # env_file:
-    #   - ./hadoop.env
     command: /opt/hive/bin/hive --service metastore
     environment:
       - SERVICE_PRECONDITION=namenode:9000 hive-metastore-db:5432
@@ -167,6 +164,7 @@ services:
       - "9083:9083"
     volumes:
       - ./infrastructure/hive/conf/hive-site.xml:/opt/hive/conf/hive-site.xml 
+      - ./infrastructure/hive/conf/core-site.xml:/opt/hive/conf/core-site.xml
       - ./src/hive/warehouse:/opt/hive/data/warehouse 
     depends_on:
       - hive-metastore-postgresql
@@ -179,12 +177,15 @@ services:
     hostname: hive-server
     environment:
       - SERVICE_PRECONDITION=hive-metastore:9083
+      - HADOOP_CONF_DIR=/opt/hadoop-2.7.4/etc/hadoop
     ports:
       - "10000:10000"
       - "10002:10002"
     volumes:
       - ./src/hive/warehouse:/opt/hive/data/warehouse 
       - ./infrastructure/hive/conf/hive-site.xml:/opt/hive/conf/hive-site.xml 
+      - ./infrastructure/hive/conf/core-site.xml:/opt/hive/conf/core-site.xml:ro
+      - ./infrastructure/hive/conf/core-site.xml:/opt/hadoop-2.7.4/etc/hadoop/core-site.xml:ro
       - ./scripts:/opt/hive/scripts
       - ./data:/data
     depends_on:
@@ -192,9 +193,7 @@ services:
 
   # SPARK
   spark-master:
-    build:
-        context: .
-        dockerfile: infrastructure/docker/Dockerfile.spark
+    image: bitnami/spark:3.5.0
     hostname: spark-master
     ports:
       - "8080:8080"
@@ -205,19 +204,21 @@ services:
       - ./utils:/opt/bitnami/spark/utils
       - ./data:/opt/bitnami/spark/data
       - ./config:/opt/bitnami/spark/conf
+    env_file:
+    - .env
     environment:
       - SPARK_MODE=master
       - SPARK_RPC_AUTHENTICATION_ENABLED=no
       - SPARK_RPC_ENCRYPTION_ENABLED=no
       - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
       - SPARK_SSL_ENABLED=no
+      - KAFKA_BROKER_URL=kafka:29092 
+      - SCHEMA_REGISTRY_URL=http://schema-registry:8081
     depends_on:
       - namenode
 
   spark-worker1:
-    build:
-        context: .
-        dockerfile: infrastructure/docker/Dockerfile.spark
+    image: bitnami/spark:3.5.0
     hostname: spark-worker1
     ports:
       - "8082:8081"
@@ -232,6 +233,8 @@ services:
       - SPARK_RPC_ENCRYPTION_ENABLED=no
       - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
       - SPARK_SSL_ENABLED=no
+    env_file:
+    - .env
     volumes:
       - ./src/streaming:/opt/bitnami/spark/streaming
       - ./utils:/opt/bitnami/spark/utils
@@ -241,9 +244,7 @@ services:
       - spark-master
 
   spark-worker2:
-    build:
-        context: .
-        dockerfile: infrastructure/docker/Dockerfile.spark
+    image: bitnami/spark:3.5.0
     hostname: spark-worker2
     ports:
       - "8084:8081"
@@ -258,6 +259,8 @@ services:
       - SPARK_RPC_ENCRYPTION_ENABLED=no
       - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
       - SPARK_SSL_ENABLED=no
+    env_file:
+    - .env
     volumes:
       - ./src/streaming:/opt/bitnami/spark/streaming
       - ./utils:/opt/bitnami/spark/utils
@@ -265,73 +268,6 @@ services:
       - ./config:/opt/bitnami/spark/conf
     depends_on:
       - spark-master
-
-  # export KAFKA_BROKER_URL=kafka:29092
-  # export SCHEMA_REGISTRY_URL=http://schema-registry:8081
-  #spark-submit --master spark://spark-master:7077 /opt/bitnami/spark/streaming/weather_stream.py
-  spark-submit:
-    build:
-      context: .
-      dockerfile: infrastructure/docker/Dockerfile.spark
-    depends_on:
-    - spark-master
-    - spark-worker1
-    - spark-worker2
-    environment:
-      - KAFKA_BROKER_URL=kafka:29092 
-      - SCHEMA_REGISTRY_URL=http://schema-registry:8081
-      - BRONZE_LAYER_PATH=${BRONZE_LAYER_PATH}
-      - SILVER_LAYER_PATH=${SILVER_LAYER_PATH}
-      - GOLD_LAYER_PATH=${GOLD_LAYER_PATH}
-    volumes:
-      - ./src/streaming:/opt/bitnami/spark/streaming
-      - ./utils:/opt/bitnami/spark/utils
-      - ./data:/opt/bitnami/spark/data
-      - ./config:/opt/bitnami/spark/conf
-    command: >
-      spark-submit
-      --master spark://spark-master:7077
-      /opt/bitnami/spark/streaming/weather_stream.py
-
-  realtime-producer:
-    build:
-      context: .
-      dockerfile: infrastructure/docker/Dockerfile.base
-    hostname: realtime-producer
-    container_name: realtime-producer
-    environment:
-      - KAFKA_BROKER_URL=kafka:29092 
-      - SCHEMA_REGISTRY_URL=http://schema-registry:8081
-      - OPENWEATHER_API_KEY=${OPENWEATHER_API_KEY}
-      - FOOTBALL_DATA_API_KEY=${FOOTBALL_DATA_API_KEY}
-      - PYTHONPATH=/opt/airflow
-    volumes:
-      - ./src/ingestion:/opt/airflow/ingestion
-      - ./src/schema:/opt/airflow/schema
-      - ./utils:/opt/airflow/utils
-    depends_on:
-      - kafka
-      - schema-registry
-    command: python /opt/airflow/ingestion/api/streaming.py
-
-  email-alert-consumer:
-    build:
-      context: .
-      dockerfile: src/streaming/email-alert/Dockerfile
-    environment:
-      - KAFKA_BROKER_URL=kafka:29092 
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - REDIS_DB=0
-      - SMTP_SERVER=${SMTP_SERVER}
-      - SMTP_PORT=${SMTP_PORT:-587}
-      - SENDER_EMAIL=${SENDER_EMAIL}
-      - SENDER_PASSWORD=${SENDER_PASSWORD}
-      - RECIPIENT_EMAILS=${RECIPIENT_EMAILS}
-    depends_on:
-      - redis
-      - kafka
-    
 
   airflow-init:
     build:
@@ -395,6 +331,31 @@ services:
       - airflow-init
     command: scheduler
 
+  jupyter:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/Dockerfile.jupyter
+    hostname: jupyter
+    ports:
+      - "8888:8888"
+    env_file:
+      - .env
+    environment:
+      - SCHEMA_REGISTRY_URL=http://schema-registry:8081
+      - KAFKA_BROKER_URL=kafka:29092
+      - JUPYTER_ENABLE_LAB=yes
+      - SPARK_MASTER=spark://spark-master:7077
+      - JUPYTER_TOKEN=123
+      - PYTHONPATH=/home/jovyan
+    volumes:
+      - ./src/ingestion:/home/jovyan/jobs/ingestion
+      - ./src/streaming:/home/jovyan/jobs/streaming
+      - ./src/schema:/home/jovyan/schema
+      - ./utils:/home/jovyan/utils
+      - ./notebooks:/home/jovyan/notebooks
+    depends_on:
+      - spark-master
+
 volumes:
   zookeeper_data:
   kafka_data:
@@ -405,8 +366,3 @@ volumes:
   hadoop_datanode2:
   hive_metastore_data:
   hive_postgresql:
-  # nifi_data:
-  # nifi_logs:
-  # elasticsearch_data:
-  # prometheus_data:
-  # grafana_data:

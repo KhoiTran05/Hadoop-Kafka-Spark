@@ -15,7 +15,7 @@ if ! docker-compose ps jupyter | grep -q "Up"; then
 fi
 
 echo "Starting continuous data ingestion in background ..."
-docker-compose exec -d jupyter python /home/jovyan/jobs/ingestion/api/streaming.py
+docker-compose exec -d jupyter python //home/jovyan/jobs/ingestion/api/streaming.py
 
 echo "Data ingestion started successfully!"
 echo ""

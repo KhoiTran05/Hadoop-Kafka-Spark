@@ -21,10 +21,10 @@ class FootballWeeklyBatchProcessor:
         """Read data from bronze layer and transform for silver layer"""
         logger.info("Processing football bronze to silver")
         
-        execution_date = context["execution_date"]
-        batch_year = execution_date.year
-        batch_month = f"{execution_date.month:02d}"
-        batch_day = f"{execution_date.day:02d}"
+        start = context["data_interval_start"]
+        batch_year = start.year
+        batch_month = start.month
+        batch_day = start.day
         
         if initial_load:
             bronze_path = f"{os.getenv('BRONZE_LAYER_PATH')}/football"
@@ -40,7 +40,7 @@ class FootballWeeklyBatchProcessor:
             .withColumn("season_start_date", to_date(col("season_start_date"))) \
             .withColumn("season_end_date", to_date(col("season_end_date"))) \
             .filter(col("id").isNotNull()) \
-            .dropDuplicates("id") \
+            .dropDuplicates(subset=["id"]) \
             .withColumn("year", year(col("match_timestamp"))) \
             .withColumn("month", month(col("match_timestamp"))) \
             .withColumn("day", dayofmonth(col("match_timestamp"))) \
@@ -56,7 +56,7 @@ class FootballWeeklyBatchProcessor:
         
         try:
             df_silver.write \
-                .mode("append") \
+                .mode("overwrite") \
                 .partitionBy("year", "month", "day") \
                 .parquet(silver_path)
                 
@@ -144,22 +144,22 @@ class FootballWeeklyBatchProcessor:
             .rowsBetween(Window.unboundedPreceding, Window.currentRow)
             
         df_team_stats = df_match_day_stats \
-            .withColumn("matches_played", sum("matches_played").over(window_spec)) \
-            .withColumn("home_matches_played", sum("home_matches_played").over(window_spec)) \
-            .withColumn("away_matches_played", sum("away_matches_played").over(window_spec)) \
-            .withColumn("wins", sum("wins").over(window_spec)) \
-            .withColumn("losses", sum("losses").over(window_spec)) \
-            .withColumn("draws", sum("draws").over(window_spec)) \
-            .withColumn("goals_for", sum("goals_for").over(window_spec)) \
-            .withColumn("goals_against", sum("goals_against").over(window_spec)) \
-            .withColumn("goals_difference", sum("goals_difference").over(window_spec)) \
-            .withColumn("clean_sheets", sum("clean_sheets").over(window_spec)) \
-            .withColumn("comeback_wins", sum("comeback_wins").over(window_spec)) \
+            .withColumn("matches_played", sum("matches_played").over(window_spec).cast("int")) \
+            .withColumn("home_matches_played", sum("home_matches_played").over(window_spec).cast("int")) \
+            .withColumn("away_matches_played", sum("away_matches_played").over(window_spec).cast("int")) \
+            .withColumn("wins", sum("wins").over(window_spec).cast("int")) \
+            .withColumn("losses", sum("losses").over(window_spec).cast("int")) \
+            .withColumn("draws", sum("draws").over(window_spec).cast("int")) \
+            .withColumn("goals_for", sum("goals_for").over(window_spec).cast("int")) \
+            .withColumn("goals_against", sum("goals_against").over(window_spec).cast("int")) \
+            .withColumn("goals_difference", sum("goals_difference").over(window_spec).cast("int")) \
+            .withColumn("clean_sheets", sum("clean_sheets").over(window_spec).cast("int")) \
+            .withColumn("comeback_wins", sum("comeback_wins").over(window_spec).cast("int")) \
             .withColumn("latest_match_date", max("latest_match_date").over(window_spec)) \
-            .withColumn("points", col("wins") * 3 + col("draws")) \
+            .withColumn("points", (col("wins") * 3 + col("draws")).cast("int")) \
             .withColumn("avg_goals", 
-                        round(when(col("matches_played") > 0, col("goals_for") / col("matches_played")), 2)) \
-            .withColumn("win_rate", round(col("wins") / col("matches_played") * 100, 2)) \
+                        (round(when(col("matches_played") > 0, col("goals_for") / col("matches_played")), 2)).cast("double")) \
+            .withColumn("win_rate", (round(col("wins") / col("matches_played") * 100, 2)).cast("double")) \
             .withColumn("updated_at", current_timestamp())
         
         df_team_stats \
@@ -170,9 +170,13 @@ class FootballWeeklyBatchProcessor:
         
         logger.info("Team statistics data written to gold layer")
         
+        self.spark.sql("""
+        CREATE DATABASE IF NOT EXISTS football
+        LOCATION 'hdfs://namenode:9000/warehouse/football.db';
+        """)
+        
         self.spark.sql(f"""
-        CREATE TABLE IF NOT EXISTS football.gold_team_statistics (
-            match_day INT,
+        CREATE TABLE IF NOT EXISTS football.team_statistics (
             team_id BIGINT,
             team_name STRING,
             matches_played INT,
@@ -192,14 +196,14 @@ class FootballWeeklyBatchProcessor:
             win_rate DOUBLE,
             updated_at TIMESTAMP
         )
-        PARTITION BY (matchday INT)
-        STORED AS PARQUET
+        USING PARQUET
+        PARTITIONED BY (matchday INT)
         LOCATION '{gold_path}/team_statistics'
         """)
         
-        self.spark.sql("MSCK REPAIR TABLE football.gold_team_statistics")
+        self.spark.sql("MSCK REPAIR TABLE football.team_statistics")
         
-        logger.info("Team statistics table created in Hive")
+        logger.info("football.team_statistics table created in Hive")
         
         return True
         
@@ -237,8 +241,8 @@ class FootballWeeklyBatchProcessor:
             .groupBy("team_id", "team_name") \
             .agg(
                 concat_ws("-", collect_list("result")).alias("last_5_streaks"),
-                sum("goals_for").alias("goals_last_5"),
-                sum("goals_against").alias("conceded_last_5")
+                sum("goals_for").cast("int").alias("goals_last_5"),
+                sum("goals_against").cast("int").alias("conceded_last_5")
             ) \
             .withColumn("updated_at", current_timestamp())
             
@@ -257,11 +261,11 @@ class FootballWeeklyBatchProcessor:
                 conceded_last_5 INT,
                 updated_at TIMESTAMP
             )
-            STORED AS PARQUET
+            USING PARQUET
             LOCATION '{gold_path}/form_streaks'
         """)
         
-        logger.info("Form streaks table created in Hive")
+        logger.info("football.form_streaks table created in Hive")
         
         return True
     
@@ -299,16 +303,16 @@ class FootballWeeklyBatchProcessor:
         ) \
         .groupBy("team_id", "team_name", "opponent_team_id", "opponent_team_name") \
         .agg(
-            sum("matches").alias("matches"),
-            sum("wins").alias("wins"),
-            sum("losses").alias("losses"),
-            sum("draws").alias("draws"),
-            sum("goals_for").alias("goals_for"),
-            sum("goals_against").alias("goals_against"),
+            sum("matches").cast("int").alias("matches"),
+            sum("wins").cast("int").alias("wins"),
+            sum("losses").cast("int").alias("losses"),
+            sum("draws").cast("int").alias("draws"),
+            sum("goals_for").cast("int").alias("goals_for"),
+            sum("goals_against").cast("int").alias("goals_against"),
             max("match_timestamp").alias("latest_match_timestamp")
         ) \
-        .withColumn("win_rate", round(col("wins") / col("matches") * 100, 2))
-        
+        .withColumn("win_rate", (round(col("wins") / col("matches") * 100, 2)).cast("double"))
+
         df_matchup.write \
             .mode("overwrite") \
             .parquet(f"{gold_path}/head_to_head")
@@ -330,12 +334,12 @@ class FootballWeeklyBatchProcessor:
                 latest_match_timestamp TIMESTAMP,
                 win_rate DOUBLE
             )
-            STORED AS PARQUET
+            USING PARQUET
             LOCATION '{gold_path}/head_to_head'
         """
         )
         
-        logger.info("Head to head table created in Hive")
+        logger.info("football.head_to_head table created in Hive")
         
         return True
     
@@ -369,8 +373,8 @@ class FootballWeeklyBatchProcessor:
     def run_weekly_batch_processing(self, initial_load=False, **context):
         """Run the complete weekly batch processing pipeline"""
         
-        execution_date = context["execution_date"]
-        logger.info(f"Starting weekly football batch processing for execution date: {execution_date}")
+        logical_date = context["logical_date"]
+        logger.info(f"Starting weekly football batch processing for logical date: {logical_date}")
         
         logger.info("Processing bronze to silver layer")
         
@@ -380,7 +384,7 @@ class FootballWeeklyBatchProcessor:
         
         logger.info("Processing silver to gold layer")
         
-        gold_result = self.silver_to_gold(**context)
+        gold_result = self.silver_to_gold()
         
         if gold_result:
             logger.info("Silver to gold transformation completed successfully")

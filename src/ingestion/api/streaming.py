@@ -31,8 +31,8 @@ class DataIngestionPipeline:
     
     def get_avro_schema(self):
         """Get avro schema for Schema Registry"""
-        football_schema_path = '/opt/airflow/schema/football.avsc'
-        weather_schema_path =  '/opt/airflow/schema/weather.avsc'
+        football_schema_path = 'schema/football.avsc'
+        weather_schema_path =  'schema/weather.avsc'
         try:
             with open(football_schema_path, 'r') as f:
                 football_schema = f.read()
