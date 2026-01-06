@@ -7,7 +7,11 @@ const http = require('http');
 const cors = require('cors');
 
 // Initialize
-const redis = new Redis();
+const redis = new Redis({
+  host: 'localhost',
+  port: 6379
+});
+
 const postgres = new Pool({
   host: "localhost",        
   port: 5432,
@@ -28,7 +32,7 @@ const io = new Server(server, { cors: { origin: "*" } });
 
 // Kafka Consumer
 const kafka = new Kafka({ brokers: ['localhost:9092'] });
-const consumer = kafka.consumer({ groupId: 'dashboard-service' });
+const consumer = kafka.consumer({ groupId: 'dashboard-service-v2' });
 
 // Deduplication cache
 const processedMatches = new Map();
@@ -76,10 +80,21 @@ async function initializeDatabase() {
 
 async function startConsumer() {
   await consumer.connect();
-  await consumer.subscribe({ topic: 'processed-matches' });
+  console.log('Kafka consumer connected');
+  await consumer.subscribe({ 
+    topic: 'processed-matches',
+    fromBeginning: true
+  });
   
   await consumer.run({
-    eachMessage: async ({ message }) => {
+    eachMessage: async ({ topic, partition, message }) => {
+      console.log('========================================');
+      console.log('Received Kafka message:');
+      console.log('Topic:', topic);
+      console.log('Partition:', partition);
+      console.log('Offset:', message.offset);
+      console.log('Raw message:', message.value.toString());
+      console.log('========================================');
       try {
         const match = JSON.parse(message.value.toString());
         
