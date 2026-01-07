@@ -98,8 +98,7 @@ npm start
 
 ![Email-alert](docs/images/email-alert.png)
 
-7. Access service UIs (HDFS, Kafka, Airflow)
-```bash
+## Access service UIs (HDFS, Kafka, Airflow)
 - HDFS (NameNode UI):
   - URL: http://localhost:9870
   - Purpose:
@@ -120,7 +119,6 @@ npm start
     - Monitor DAGs and task execution
     - Check logs for ingestion and processing jobs
     - Manually trigger or backfill DAGs
-```
 
 
 
