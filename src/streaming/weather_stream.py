@@ -346,11 +346,12 @@ class WeatherStreamProcessor:
             .trigger(processingTime="1 minute") \
             .start()
         
-        df_base_threshold = df_raw \
+        df_base = df_raw \
+            .withWatermark("event_timestamp", "5 minutes") \
             .dropDuplicates(["city", "event_timestamp"]) \
             .na.drop(subset=["city", "country", "event_timestamp"])
                 
-        df_threshold_alerts = self.threshold_based_anomaly_detect(df_base_threshold)
+        df_threshold_alerts = self.threshold_based_anomaly_detect(df_base)
             
         query_threshold_alert = self.write_to_alert_topic(df_threshold_alerts, "weather-alert", "threshold_alert")
             
@@ -366,13 +367,8 @@ class WeatherStreamProcessor:
             "threshold_silver", 
             ["year", "month", "day"]
         )
-            
-        df_base_change = df_raw \
-            .withWatermark("event_timestamp", "5 minutes") \
-            .dropDuplicates(["city", "event_timestamp"]) \
-            .na.drop(subset=["city", "country", "event_timestamp"])
 
-        df_change_alerts = self.change_anomaly_detect(df_base_change)
+        df_change_alerts = self.change_anomaly_detect(df_base)
 
         query_change_alert = self.write_to_alert_topic(df_change_alerts, "weather-alert", "change_alert")
             

@@ -2,7 +2,7 @@
 
 set -e
 
-echo "Starting Spark streaming jobs..."
+echo "Starting Spark streaming job..."
 
 if ! curl -s http://localhost:8080 > /dev/null; then
     echo "Spark master is not running. Please start the services first with docker-compose up -d"

@@ -86,7 +86,7 @@ npm start
 
 # Access dashboard at http://localhost:3001/dashboard.html
 ```
-
+![Football-dashboard](docs/images/football-dashboard.png)
 6. Weather email alert
 ```bash
 # Start weather streaming
@@ -97,6 +97,30 @@ npm start
 ```
 
 ![Email-alert](docs/images/email-alert.png)
+
+7. Access service UIs (HDFS, Kafka, Airflow)
+```bash
+- HDFS (NameNode UI):
+  - URL: http://localhost:9870
+  - Purpose:
+    - Browse HDFS directories (Bronze / Silver / Gold layers)
+    - Check file sizes, replication, and HDFS health
+
+
+- Kafka UI:
+  - URL: http://localhost:8085
+  - Purpose:
+    - View topics (weather, football, processed topics)
+    - Inspect messages and consumer groups
+    - Monitor lag and throughput
+
+- Airflow Web UI:
+  - URL: http://localhost:8083
+  - Purpose:
+    - Monitor DAGs and task execution
+    - Check logs for ingestion and processing jobs
+    - Manually trigger or backfill DAGs
+```
 
 
 
